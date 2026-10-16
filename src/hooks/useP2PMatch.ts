@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Client } from 'boardgame.io/client'
 import { P2P } from '@boardgame.io/p2p'
-import { SanJuanGame, type SanJuanState } from '../game/SanJuanGame'
+import { SanJuanGame } from '../game/SanJuanGame'
+import type { SanJuanState } from '../game/state'
 
 export const HOST_PLAYER_ID = '0'
 export const GUEST_PLAYER_ID = '1'

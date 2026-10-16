@@ -79,7 +79,7 @@ export default function App() {
           )}
 
           {gameStarted && state && client && (
-            <Board state={state} playerID={myPlayerID} players={players} onDraw={() => client.moves.drawCard()} />
+            <Board state={state} playerID={myPlayerID} players={players} moves={client.moves} />
           )}
         </>
       )}

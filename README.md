@@ -20,7 +20,7 @@ Open the app in two browsers (or two devices):
 2. **Browser B** → type the token into *Join Game* (or open the invite link).
 3. Status goes *Connecting → Waiting for opponent → Connected*, the player list shows both
    players online, and the board appears on both screens.
-4. Press *Draw Card* on whichever screen has the turn; the card, turn counter and state ID
+3. Press *Draw Card* on whichever screen has the turn; the card, turn counter and state ID
    update on both screens.
 
 ## Deploy (GitHub Pages)
@@ -65,7 +65,8 @@ player `1`. The lobby currently seats 2 players; the rules engine supports 2–4
 - **Roles:** Builder (−1 card), Producer (+1 good), Trader (+1 good, trading house tile cycles
   top → bottom), Councillor (draw 5 instead of 2, keep 1), Prospector (draw 1).
 - **Base game:** all 110 cards; violet buildings are unique per player; library doubles
-  privileges (2 players: governor only once per round). Second-edition rules: prefecture costs 4,
+  privileges (2 players: the governor may use it only once per round — confirmed by several rule
+  sources; not using it on the first turn keeps it available for the second). Second-edition rules: prefecture costs 4,
   the gold mine automatically keeps the cheapest of 4 differently-priced cards, and the guild hall
   scores 1 VP per production building plus 1 VP per different kind.
 - **Card data** (costs, VP, trading house tiles, zh-TW names) was checked against the Traditional
@@ -84,14 +85,13 @@ player `1`. The lobby currently seats 2 players; the rules engine supports 2–4
 
 1. A building's ability works only from the action *after* it is built.
 2. Goods of the same type may be sold together.
-3. Library: the 2-player limit (governor once per round) comes from first-edition summaries.
 4. Gold mine: fewer than 4 cards left in deck and discard counts as a miss.
-5. Tavern: ties for the fewest buildings count as “fewest”.
-6. Cathedral counts the cost-6 buildings of all opponents together.
-7. Residence: a set is 3 different building types with the same cost; each building is used once.
-8. Customs office receives a good on its owner's councillor turn only if it is empty; the
+4. Tavern: ties for the fewest buildings count as “fewest”.
+5. Cathedral counts the cost-6 buildings of all opponents together.
+6. Residence: a set is 3 different building types with the same cost; each building is used once.
+7. Customs office receives a good on its owner's councillor turn only if it is empty; the
    customs good also counts as a good for the black market, market stand and tie-break.
-9. Harbor: one sold good is always kept (automatic). Goldsmith: the turned-up card is discarded
+8. Harbor: one sold good is always kept (automatic). Goldsmith: the turned-up card is discarded
     if any player, including you, already has that building.
 
 ## Signaling

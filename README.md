@@ -49,6 +49,8 @@ show the same hands, turn number and state ID.
 | `src/hooks/useP2PMatch.ts` | Creates the boardgame.io client with `P2P({ isHost })`, exposes state, player list and connection status. |
 | `src/components/Lobby.tsx`, `ConnectionStatus.tsx` | Host / join UI and live connection status. |
 | `src/components/Board.tsx`, `CardView.tsx` | Playable board: roles, buildings, hand and per-phase controls, log, final scores. |
+| `src/components/CardInfo.tsx` | Card details dialog, opened by right-click (or long-press on phones). |
+| `src/i18n/` | English / Traditional Chinese UI text, card names and effects; the choice is remembered per browser. Game logs are structured, so each player reads them in their own language. |
 
 The room token is the boardgame.io `matchID`; the P2P transport derives the host's PeerJS ID
 from it, so the guest can find the host with just the token. The host is player `0`, the guest

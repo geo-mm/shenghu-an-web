@@ -1,5 +1,6 @@
 /**
  * San Juan card data (first edition base game, 110 cards).
+ * Names and effect texts are translated in src/i18n/messages.ts.
  *
  * Every card is a building. Cards in hand double as money (pay a building's
  * cost by discarding that many cards) and, placed face down on a production
@@ -50,9 +51,6 @@ export type BuildingPhase = 'governor' | 'builder' | 'producer' | 'trader' | 'co
 
 export interface BuildingDef {
   type: BuildingType
-  name: string
-  /** Traditional Chinese name. */
-  nameZh: string
   kind: 'production' | 'violet'
   cost: number
   /** Printed victory points (the cost-6 buildings score through `bonus` instead). */
@@ -64,42 +62,41 @@ export interface BuildingDef {
   /** When a violet building's function applies. */
   phase?: BuildingPhase
   monument?: boolean
-  text: string
 }
 
 export const BUILDINGS: Record<BuildingType, BuildingDef> = {
-  indigo_plant: { type: 'indigo_plant', name: 'Indigo plant', nameZh: '染料廠', kind: 'production', cost: 1, vp: 1, count: 10, good: 'indigo', text: 'Produces indigo.' },
-  sugar_mill: { type: 'sugar_mill', name: 'Sugar mill', nameZh: '製糖廠', kind: 'production', cost: 2, vp: 1, count: 8, good: 'sugar', text: 'Produces sugar.' },
-  tobacco_storage: { type: 'tobacco_storage', name: 'Tobacco storage', nameZh: '菸草廠', kind: 'production', cost: 3, vp: 2, count: 8, good: 'tobacco', text: 'Produces tobacco.' },
-  coffee_roaster: { type: 'coffee_roaster', name: 'Coffee roaster', nameZh: '咖啡烘焙廠', kind: 'production', cost: 4, vp: 2, count: 8, good: 'coffee', text: 'Produces coffee.' },
-  silver_smelter: { type: 'silver_smelter', name: 'Silver smelter', nameZh: '煉銀廠', kind: 'production', cost: 5, vp: 3, count: 8, good: 'silver', text: 'Produces silver.' },
+  indigo_plant: { type: 'indigo_plant', kind: 'production', cost: 1, vp: 1, count: 10, good: 'indigo' },
+  sugar_mill: { type: 'sugar_mill', kind: 'production', cost: 2, vp: 1, count: 8, good: 'sugar' },
+  tobacco_storage: { type: 'tobacco_storage', kind: 'production', cost: 3, vp: 2, count: 8, good: 'tobacco' },
+  coffee_roaster: { type: 'coffee_roaster', kind: 'production', cost: 4, vp: 2, count: 8, good: 'coffee' },
+  silver_smelter: { type: 'silver_smelter', kind: 'production', cost: 5, vp: 3, count: 8, good: 'silver' },
 
-  smithy: { type: 'smithy', name: 'Smithy', nameZh: '鐵匠鋪', kind: 'violet', cost: 1, vp: 1, count: 3, phase: 'builder', text: 'Builder: production buildings cost 1 card less.' },
-  gold_mine: { type: 'gold_mine', name: 'Gold mine', nameZh: '金礦', kind: 'violet', cost: 1, vp: 1, count: 3, phase: 'prospector', text: 'Prospector: reveal 4 cards; if all have different costs, take 1 into your hand.' },
-  archive: { type: 'archive', name: 'Archive', nameZh: '檔案館', kind: 'violet', cost: 1, vp: 1, count: 3, phase: 'councillor', text: 'Councillor: you may discard from your whole hand, not only the drawn cards.' },
-  poor_house: { type: 'poor_house', name: 'Poor house', nameZh: '救濟院', kind: 'violet', cost: 2, vp: 1, count: 3, phase: 'builder', text: 'Builder: after building, if you have 0 or 1 cards in hand, draw 1 card.' },
-  black_market: { type: 'black_market', name: 'Black market', nameZh: '黑市', kind: 'violet', cost: 2, vp: 1, count: 3, phase: 'builder', text: 'Builder: you may pay with up to 2 goods (1 card each).' },
-  trading_post: { type: 'trading_post', name: 'Trading post', nameZh: '交易站', kind: 'violet', cost: 2, vp: 1, count: 3, phase: 'trader', text: 'Trader: you may sell 1 additional good.' },
-  well: { type: 'well', name: 'Well', nameZh: '水井', kind: 'violet', cost: 2, vp: 1, count: 3, phase: 'producer', text: 'Producer: if you produce 2 or more goods, draw 1 card.' },
-  market_stand: { type: 'market_stand', name: 'Market stand', nameZh: '攤販', kind: 'violet', cost: 2, vp: 1, count: 3, phase: 'trader', text: 'Trader: if you sell 2 or more goods, draw 1 card.' },
-  crane: { type: 'crane', name: 'Crane', nameZh: '起重機', kind: 'violet', cost: 2, vp: 1, count: 3, phase: 'builder', text: 'Builder: you may build over one of your buildings, paying only the difference.' },
-  chapel: { type: 'chapel', name: 'Chapel', nameZh: '禮拜堂', kind: 'violet', cost: 3, vp: 2, count: 3, phase: 'governor', text: 'Governor: you may tuck 1 hand card under the chapel; 1 VP each at game end.' },
-  tower: { type: 'tower', name: 'Tower', nameZh: '塔樓', kind: 'violet', cost: 3, vp: 2, count: 3, phase: 'governor', text: 'Governor: your hand limit is 12 instead of 7.' },
-  aqueduct: { type: 'aqueduct', name: 'Aqueduct', nameZh: '水道橋', kind: 'violet', cost: 3, vp: 2, count: 3, phase: 'producer', text: 'Producer: you may produce 1 additional good.' },
-  carpenter: { type: 'carpenter', name: 'Carpenter', nameZh: '木工場', kind: 'violet', cost: 3, vp: 2, count: 3, phase: 'builder', text: 'Builder: after building a violet building, draw 1 card.' },
-  prefecture: { type: 'prefecture', name: 'Prefecture', nameZh: '省政府', kind: 'violet', cost: 3, vp: 2, count: 3, phase: 'councillor', text: 'Councillor: keep 1 additional card.' },
-  market_hall: { type: 'market_hall', name: 'Market hall', nameZh: '市場', kind: 'violet', cost: 4, vp: 2, count: 3, phase: 'trader', text: 'Trader: when you sell at least 1 good, draw 1 additional card.' },
-  quarry: { type: 'quarry', name: 'Quarry', nameZh: '採石場', kind: 'violet', cost: 4, vp: 2, count: 3, phase: 'builder', text: 'Builder: violet buildings cost 1 card less.' },
-  library: { type: 'library', name: 'Library', nameZh: '圖書館', kind: 'violet', cost: 5, vp: 3, count: 3, phase: 'all', text: 'Doubles the privilege of the role you choose. (2 players: the governor may use it only once per round.)' },
+  smithy: { type: 'smithy', kind: 'violet', cost: 1, vp: 1, count: 3, phase: 'builder' },
+  gold_mine: { type: 'gold_mine', kind: 'violet', cost: 1, vp: 1, count: 3, phase: 'prospector' },
+  archive: { type: 'archive', kind: 'violet', cost: 1, vp: 1, count: 3, phase: 'councillor' },
+  poor_house: { type: 'poor_house', kind: 'violet', cost: 2, vp: 1, count: 3, phase: 'builder' },
+  black_market: { type: 'black_market', kind: 'violet', cost: 2, vp: 1, count: 3, phase: 'builder' },
+  trading_post: { type: 'trading_post', kind: 'violet', cost: 2, vp: 1, count: 3, phase: 'trader' },
+  well: { type: 'well', kind: 'violet', cost: 2, vp: 1, count: 3, phase: 'producer' },
+  market_stand: { type: 'market_stand', kind: 'violet', cost: 2, vp: 1, count: 3, phase: 'trader' },
+  crane: { type: 'crane', kind: 'violet', cost: 2, vp: 1, count: 3, phase: 'builder' },
+  chapel: { type: 'chapel', kind: 'violet', cost: 3, vp: 2, count: 3, phase: 'governor' },
+  tower: { type: 'tower', kind: 'violet', cost: 3, vp: 2, count: 3, phase: 'governor' },
+  aqueduct: { type: 'aqueduct', kind: 'violet', cost: 3, vp: 2, count: 3, phase: 'producer' },
+  carpenter: { type: 'carpenter', kind: 'violet', cost: 3, vp: 2, count: 3, phase: 'builder' },
+  prefecture: { type: 'prefecture', kind: 'violet', cost: 3, vp: 2, count: 3, phase: 'councillor' },
+  market_hall: { type: 'market_hall', kind: 'violet', cost: 4, vp: 2, count: 3, phase: 'trader' },
+  quarry: { type: 'quarry', kind: 'violet', cost: 4, vp: 2, count: 3, phase: 'builder' },
+  library: { type: 'library', kind: 'violet', cost: 5, vp: 3, count: 3, phase: 'all' },
 
-  statue: { type: 'statue', name: 'Statue', nameZh: '雕像', kind: 'violet', cost: 3, vp: 3, count: 3, monument: true, text: 'Monument.' },
-  victory_column: { type: 'victory_column', name: 'Victory column', nameZh: '勝利紀念柱', kind: 'violet', cost: 4, vp: 4, count: 3, monument: true, text: 'Monument.' },
-  hero: { type: 'hero', name: 'Hero', nameZh: '英雄像', kind: 'violet', cost: 5, vp: 5, count: 3, monument: true, text: 'Monument.' },
+  statue: { type: 'statue', kind: 'violet', cost: 3, vp: 3, count: 3, monument: true },
+  victory_column: { type: 'victory_column', kind: 'violet', cost: 4, vp: 4, count: 3, monument: true },
+  hero: { type: 'hero', kind: 'violet', cost: 5, vp: 5, count: 3, monument: true },
 
-  guild_hall: { type: 'guild_hall', name: 'Guild hall', nameZh: '同業公會', kind: 'violet', cost: 6, vp: 0, count: 2, phase: 'end', text: 'Game end: 2 VP per production building.' },
-  city_hall: { type: 'city_hall', name: 'City hall', nameZh: '市政廳', kind: 'violet', cost: 6, vp: 0, count: 2, phase: 'end', text: 'Game end: 1 VP per violet building (including this one).' },
-  triumphal_arch: { type: 'triumphal_arch', name: 'Triumphal arch', nameZh: '凱旋門', kind: 'violet', cost: 6, vp: 0, count: 2, phase: 'end', text: 'Game end: 4 / 6 / 8 VP for 1 / 2 / 3 monuments.' },
-  palace: { type: 'palace', name: 'Palace', nameZh: '宮殿', kind: 'violet', cost: 6, vp: 0, count: 2, phase: 'end', text: 'Game end: +1 VP per 4 VP you have (rounded down).' },
+  guild_hall: { type: 'guild_hall', kind: 'violet', cost: 6, vp: 0, count: 2, phase: 'end' },
+  city_hall: { type: 'city_hall', kind: 'violet', cost: 6, vp: 0, count: 2, phase: 'end' },
+  triumphal_arch: { type: 'triumphal_arch', kind: 'violet', cost: 6, vp: 0, count: 2, phase: 'end' },
+  palace: { type: 'palace', kind: 'violet', cost: 6, vp: 0, count: 2, phase: 'end' },
 }
 
 /** A card is identified by its index in `CARD_LIST` (0..109). */
@@ -143,14 +140,6 @@ export function goodPrice(tile: number, good: GoodType): number {
 export type RoleId = 'builder' | 'producer' | 'trader' | 'councillor' | 'prospector'
 
 export const ROLES: readonly RoleId[] = ['builder', 'producer', 'trader', 'councillor', 'prospector']
-
-export const ROLE_INFO: Record<RoleId, { name: string; nameZh: string; action: string; privilege: string }> = {
-  builder: { name: 'Builder', nameZh: '建築師', action: 'Everyone may build 1 building.', privilege: 'Pays 1 card less.' },
-  producer: { name: 'Producer', nameZh: '生產者', action: 'Everyone may produce 1 good.', privilege: 'Produces 1 extra good.' },
-  trader: { name: 'Trader', nameZh: '商人', action: 'Everyone may sell 1 good.', privilege: 'Sells 1 extra good.' },
-  councillor: { name: 'Councillor', nameZh: '議員', action: 'Everyone draws 2 cards, keeps 1.', privilege: 'Draws 5 cards instead of 2.' },
-  prospector: { name: 'Prospector', nameZh: '淘金者', action: 'No action for the others.', privilege: 'Draws 1 card.' },
-}
 
 export const HAND_LIMIT = 7
 export const TOWER_HAND_LIMIT = 12

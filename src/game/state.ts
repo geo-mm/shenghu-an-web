@@ -1,4 +1,4 @@
-import type { CardId, RoleId } from './cards'
+import type { BuildingType, CardId, GoodType, RoleId } from './cards'
 
 export type PlayerID = string
 
@@ -35,10 +35,23 @@ export interface GoldMineReveal {
   cards: CardId[]
 }
 
-export interface LogEntry {
+/** Structured log entry, translated by the UI (see src/i18n). */
+export type LogEvent =
+  | { key: 'roundStart'; governor: PlayerID }
+  | { key: 'cannotBuild' | 'noEmptyProduction' | 'noGoods' | 'chapelTuck' | 'pass' }
+  | { key: 'poorHouseDraw' | 'carpenterDraw' | 'wellDraw' }
+  | { key: 'councilKeptAll' | 'prospect' | 'handLimitDiscard' | 'councilKeep'; n: number }
+  | { key: 'goldStrike' | 'goldMiss'; cards: BuildingType[] }
+  | { key: 'goldTake'; card: BuildingType }
+  | { key: 'chooseRole'; role: RoleId }
+  | { key: 'build'; card: BuildingType; n: number; over?: BuildingType }
+  | { key: 'produce'; goods: GoodType[] }
+  | { key: 'sell'; goods: GoodType[]; n: number }
+  | { key: 'gameOver'; winners: PlayerID[]; vp: number }
+
+export type LogEntry = LogEvent & {
   round: number
   player?: PlayerID
-  text: string
 }
 
 export interface Score {

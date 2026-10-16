@@ -4,8 +4,11 @@ import { Lobby, normalizeToken } from './components/Lobby'
 import { ConnectionStatus, type LinkStatus } from './components/ConnectionStatus'
 import { Board } from './components/Board'
 import { GUEST_PLAYER_ID, HOST_PLAYER_ID, useP2PMatch, type MatchConfig } from './hooks/useP2PMatch'
+import { useI18n } from './i18n/I18n'
+import { LANGS, type Lang } from './i18n/messages'
 
 export default function App() {
+  const { t, lang, setLang } = useI18n()
   const [config, setConfig] = useState<MatchConfig | null>(null)
   const { client, state, players, hostRegistered, error } = useP2PMatch(config)
   const [startedToken, setStartedToken] = useState<string | null>(null)
@@ -38,12 +41,25 @@ export default function App() {
   return (
     <main className="app">
       <header className="app-header">
-        <h1>San Juan · P2P</h1>
-        {config && (
-          <button className="ghost" onClick={leave}>
-            Leave
-          </button>
-        )}
+        <h1>{t.appTitle}</h1>
+        <div className="header-actions">
+          <label className="lang-select">
+            <span className="sr-only">{t.language}</span>
+            <span aria-hidden>🌐</span>
+            <select value={lang} onChange={(e) => setLang(e.target.value as Lang)} data-testid="lang-select" aria-label={t.language}>
+              {LANGS.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          {config && (
+            <button className="ghost" onClick={leave}>
+              {t.leave}
+            </button>
+          )}
+        </div>
       </header>
 
       {!config && <Lobby onStart={setConfig} initialJoinToken={initialJoinToken} />}
@@ -54,28 +70,26 @@ export default function App() {
 
           {error && (
             <p className="error" role="alert">
-              {error}
+              {error.type === 'unavailable-id' ? t.tokenInUse : t.p2pError(error.type, error.message)}
             </p>
           )}
 
           {config.role === 'host' && !gameStarted && (
             <section className="panel token-panel">
-              <h2>Room token</h2>
+              <h2>{t.roomToken}</h2>
               <div className="token" data-testid="room-token">
                 {config.token}
               </div>
-              <p className="muted">Ask your opponent to enter this token under “Join Game”, or send them the link:</p>
+              <p className="muted">{t.shareHint}</p>
               <div className="invite">
                 <code>{inviteLink}</code>
-                <button onClick={() => navigator.clipboard?.writeText(inviteLink)}>Copy link</button>
+                <button onClick={() => navigator.clipboard?.writeText(inviteLink)}>{t.copyLink}</button>
               </div>
             </section>
           )}
 
           {config.role === 'guest' && status === 'connecting' && !error && (
-            <p className="muted">
-              Looking for host of room <code>{config.token}</code>… (retrying automatically)
-            </p>
+            <p className="muted">{t.lookingForHost(config.token)}</p>
           )}
 
           {gameStarted && state && client && (
@@ -84,10 +98,7 @@ export default function App() {
         </>
       )}
 
-      <footer className="muted small">
-        Pure peer-to-peer via WebRTC: the host’s browser runs the authoritative game state. A PeerJS signaling
-        server is only used to introduce the two peers.
-      </footer>
+      <footer className="muted small">{t.footer}</footer>
     </main>
   )
 }

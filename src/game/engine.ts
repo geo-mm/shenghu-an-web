@@ -10,7 +10,7 @@ import {
   BUILDINGS_TO_END,
   CARD_LIST,
   HAND_LIMIT,
-  ROLE_INFO,
+  ROLES,
   STARTING_HAND,
   TOWER_HAND_LIMIT,
   TRADE_TILES,
@@ -19,9 +19,10 @@ import {
   goodPrice,
   type BuildingType,
   type CardId,
+  type GoodType,
   type RoleId,
 } from './cards'
-import type { PlayerID, PlayerState, SanJuanState, Score } from './state'
+import type { LogEvent, PlayerID, PlayerState, SanJuanState, Score } from './state'
 
 export interface Rng {
   Shuffle<T>(deck: T[]): T[]
@@ -95,18 +96,27 @@ export function buildCost(G: SanJuanState, ctx: EngineCtx, p: PlayerID, card: Ca
   return Math.max(0, def.cost - discount)
 }
 
+export type PlacementError = 'needCrane' | 'noSuchBuilding' | 'maxBuildings' | 'violetUnique'
+
+const PLACEMENT_MESSAGES: Record<PlacementError, string> = {
+  needCrane: 'You need a crane to build over a building.',
+  noSuchBuilding: 'No such building to replace.',
+  maxBuildings: `You already have ${BUILDINGS_TO_END} buildings.`,
+  violetUnique: 'You already own this violet building; violet buildings are unique.',
+}
+
 /** Why `p` may not place `card` (optionally replacing building `replace`), or null if it's allowed. */
-export function placementError(player: PlayerState, card: CardId, replace: number | null): string | null {
+export function placementError(player: PlayerState, card: CardId, replace: number | null): PlacementError | null {
   const def = cardDef(card)
   if (replace !== null) {
-    if (!owns(player, 'crane')) return 'You need a crane to build over a building.'
-    if (!player.buildings[replace]) return 'No such building to replace.'
+    if (!owns(player, 'crane')) return 'needCrane'
+    if (!player.buildings[replace]) return 'noSuchBuilding'
   } else if (player.buildings.length >= BUILDINGS_TO_END) {
-    return `You already have ${BUILDINGS_TO_END} buildings.`
+    return 'maxBuildings'
   }
   if (def.kind === 'violet') {
     const dup = player.buildings.findIndex((b, i) => i !== replace && cardType(b.card) === def.type)
-    if (dup !== -1) return `You already own a ${def.name}; violet buildings are unique.`
+    if (dup !== -1) return 'violetUnique'
   }
   return null
 }
@@ -163,9 +173,9 @@ function needsGovernorDecision(player: PlayerState): boolean {
 // Card movement
 // ---------------------------------------------------------------------------
 
-function log(G: SanJuanState, text: string, player?: PlayerID) {
+function log(G: SanJuanState, event: LogEvent, player?: PlayerID) {
   // Omit `player` when absent: undefined would arrive as null after JSON transport.
-  G.log.push(player === undefined ? { round: G.round, text } : { round: G.round, player, text })
+  G.log.push(player === undefined ? { ...event, round: G.round } : { ...event, round: G.round, player })
   if (G.log.length > 200) G.log.splice(0, G.log.length - 200)
 }
 
@@ -240,7 +250,7 @@ export function createInitialState(ctx: EngineCtx, rng: Rng): SanJuanState {
     scores: null,
     winners: null,
   }
-  log(G, `Round 1 begins. Player ${governor} is governor.`)
+  log(G, { key: 'roundStart', governor })
   return G
 }
 
@@ -297,15 +307,15 @@ function startRoleTurn(G: SanJuanState, ctx: EngineCtx, rng: Rng, p: PlayerID): 
   switch (role) {
     case 'builder':
       if (canBuildAnything(G, ctx, p)) return true
-      log(G, 'cannot build anything.', p)
+      log(G, { key: 'cannotBuild' }, p)
       return false
     case 'producer':
       if (player.buildings.some((b) => b.good === null && cardDef(b.card).kind === 'production')) return true
-      log(G, 'has no empty production building.', p)
+      log(G, { key: 'noEmptyProduction' }, p)
       return false
     case 'trader':
       if (goodsCount(player) > 0) return true
-      log(G, 'has no goods to sell.', p)
+      log(G, { key: 'noGoods' }, p)
       return false
     case 'councillor': {
       const n = councilDraws(G, ctx, p)
@@ -314,7 +324,7 @@ function startRoleTurn(G: SanJuanState, ctx: EngineCtx, rng: Rng, p: PlayerID): 
       if (councilDiscardCount(player) > 0) return true
       // Nothing to choose (deck ran dry): keep whatever was drawn.
       player.hand.push(...player.pending)
-      log(G, `drew and kept ${plural(player.pending.length, 'card')}.`, p)
+      log(G, { key: 'councilKeptAll', n: player.pending.length }, p)
       player.pending = []
       return false
     }
@@ -323,18 +333,18 @@ function startRoleTurn(G: SanJuanState, ctx: EngineCtx, rng: Rng, p: PlayerID): 
         const factor = privilegeFactor(G, ctx, p)
         markLibraryUse(G, ctx, p, factor)
         const n = drawToHand(G, rng, p, factor)
-        log(G, `prospects and draws ${plural(n, 'card')}.`, p)
+        log(G, { key: 'prospect', n }, p)
       }
       if (!owns(player, 'gold_mine')) return false
       const cards = drawCards(G, rng, 4)
       const costs = new Set(cards.map((c) => cardDef(c).cost))
       if (cards.length === 4 && costs.size === 4) {
         G.reveal = { player: p, cards }
-        log(G, `strikes gold: ${cards.map((c) => cardDef(c).name).join(', ')}.`, p)
+        log(G, { key: 'goldStrike', cards: cards.map(cardType) }, p)
         return true
       }
       G.discard.push(...cards)
-      log(G, `finds no gold (${cards.map((c) => cardDef(c).name).join(', ') || 'no cards'}).`, p)
+      log(G, { key: 'goldMiss', cards: cards.map(cardType) }, p)
       return false
     }
   }
@@ -361,7 +371,7 @@ function finishRole(G: SanJuanState, ctx: EngineCtx) {
   G.pickers = pickOrder(ctx, G.governor)
   G.rolesTaken = []
   G.governorUsedLibrary = false
-  log(G, `Round ${G.round} begins. Player ${G.governor} is governor.`)
+  log(G, { key: 'roundStart', governor: G.governor })
   G.step = { kind: 'governor', queue: orderFrom(ctx, G.governor) }
 }
 
@@ -397,11 +407,11 @@ export function actGovernor(G: SanJuanState, p: PlayerID, chapelCard: CardId | n
   if (chapelCard !== null) {
     hand.splice(hand.indexOf(chapelCard), 1)
     player.chapel.push(chapelCard)
-    log(G, 'tucks a card under the chapel.', p)
+    log(G, { key: 'chapelTuck' }, p)
   }
   player.hand = hand
   G.discard.push(...discards)
-  if (discards.length) log(G, `discards ${plural(discards.length, 'card')} down to the hand limit.`, p)
+  if (discards.length) log(G, { key: 'handLimitDiscard', n: discards.length }, p)
   doneActing(G)
   return null
 }
@@ -409,13 +419,13 @@ export function actGovernor(G: SanJuanState, p: PlayerID, chapelCard: CardId | n
 export function actChooseRole(G: SanJuanState, ctx: EngineCtx, p: PlayerID, role: RoleId): string | null {
   const err = checkTurn(G, p, 'chooseRole')
   if (err) return err
-  if (!ROLE_INFO[role]) return 'Unknown role.'
+  if (!ROLES.includes(role)) return 'Unknown role.'
   if (G.rolesTaken.includes(role)) return 'That role was already chosen this round.'
   G.rolesTaken.push(role)
   G.pickers.shift()
   G.step = { kind: 'role', role, chooser: p, queue: orderFrom(ctx, p) }
   if (role === 'trader') G.tradeTile = G.tradeTiles[0]
-  log(G, `chooses the ${ROLE_INFO[role].name}.`, p)
+  log(G, { key: 'chooseRole', role }, p)
   return null
 }
 
@@ -440,7 +450,7 @@ export function actBuild(G: SanJuanState, ctx: EngineCtx, rng: Rng, p: PlayerID,
   if (!player.hand.includes(card)) return 'That card is not in your hand.'
   if (payment.includes(card)) return 'You cannot pay with the card you are building.'
   const placeErr = placementError(player, card, replace)
-  if (placeErr) return placeErr
+  if (placeErr) return PLACEMENT_MESSAGES[placeErr]
   if (goods.length > 0) {
     if (!owns(player, 'black_market')) return 'You need a black market to pay with goods.'
     if (goods.length > 2) return 'The black market accepts at most 2 goods.'
@@ -470,14 +480,14 @@ export function actBuild(G: SanJuanState, ctx: EngineCtx, rng: Rng, p: PlayerID,
     G.discard.push(old.card)
     if (old.good !== null) G.discard.push(old.good)
     player.buildings[replace] = { card, good: null }
-    log(G, `builds a ${def.name} over the ${cardDef(old.card).name} for ${plural(cost, 'card')}.`, p)
+    log(G, { key: 'build', card: def.type, n: cost, over: cardType(old.card) }, p)
   } else {
     player.buildings.push({ card, good: null })
-    log(G, `builds a ${def.name} for ${plural(cost, 'card')}.`, p)
+    log(G, { key: 'build', card: def.type, n: cost }, p)
   }
 
-  if (hadPoorHouse && player.hand.length <= 1 && drawToHand(G, rng, p, 1)) log(G, 'draws 1 card (poor house).', p)
-  if (hadCarpenter && def.kind === 'violet' && drawToHand(G, rng, p, 1)) log(G, 'draws 1 card (carpenter).', p)
+  if (hadPoorHouse && player.hand.length <= 1 && drawToHand(G, rng, p, 1)) log(G, { key: 'poorHouseDraw' }, p)
+  if (hadCarpenter && def.kind === 'violet' && drawToHand(G, rng, p, 1)) log(G, { key: 'carpenterDraw' }, p)
   doneActing(G)
   return null
 }
@@ -504,9 +514,9 @@ export function actProduce(G: SanJuanState, ctx: EngineCtx, rng: Rng, p: PlayerI
     player.buildings[i].good = good
     produced++
   }
-  const names = indexes.slice(0, produced).map((i) => cardDef(player.buildings[i].card).good)
-  log(G, `produces ${produced ? names.join(', ') : 'nothing (no cards left)'}.`, p)
-  if (produced >= 2 && owns(player, 'well') && drawToHand(G, rng, p, 1)) log(G, 'draws 1 card (well).', p)
+  const goods = indexes.slice(0, produced).map((i) => cardDef(player.buildings[i].card).good!)
+  log(G, { key: 'produce', goods }, p)
+  if (produced >= 2 && owns(player, 'well') && drawToHand(G, rng, p, 1)) log(G, { key: 'wellDraw' }, p)
   doneActing(G)
   return null
 }
@@ -524,7 +534,7 @@ export function actSell(G: SanJuanState, ctx: EngineCtx, rng: Rng, p: PlayerID, 
   if (indexes.length > max - privilege(G, ctx, p) + 1) markLibraryUse(G, ctx, p, privilegeFactor(G, ctx, p))
 
   let income = 0
-  const sold: string[] = []
+  const sold: GoodType[] = []
   for (const i of indexes) {
     const b = player.buildings[i]
     const good = cardDef(b.card).good!
@@ -536,7 +546,7 @@ export function actSell(G: SanJuanState, ctx: EngineCtx, rng: Rng, p: PlayerID, 
   if (indexes.length >= 2 && owns(player, 'market_stand')) income += 1
   if (owns(player, 'market_hall')) income += 1
   const drawn = drawToHand(G, rng, p, income)
-  log(G, `sells ${sold.join(', ')} for ${plural(drawn, 'card')}.`, p)
+  log(G, { key: 'sell', goods: sold, n: drawn }, p)
   doneActing(G)
   return null
 }
@@ -553,7 +563,7 @@ export function actCouncil(G: SanJuanState, p: PlayerID, discards: CardId[]): st
   player.hand = owns(player, 'archive') ? pool : [...player.hand, ...pool]
   player.pending = []
   G.discard.push(...discards)
-  log(G, `keeps ${plural(councilKeeps(player), 'card')} as councillor.`, p)
+  log(G, { key: 'councilKeep', n: councilKeeps(player) }, p)
   doneActing(G)
   return null
 }
@@ -566,7 +576,7 @@ export function actGoldMine(G: SanJuanState, p: PlayerID, card: CardId): string 
   G.players[p].hand.push(card)
   G.discard.push(...G.reveal.cards.filter((c) => c !== card))
   G.reveal = null
-  log(G, `takes the ${cardDef(card).name} from the gold mine.`, p)
+  log(G, { key: 'goldTake', card: cardType(card) }, p)
   doneActing(G)
   return null
 }
@@ -576,7 +586,7 @@ export function actPass(G: SanJuanState, p: PlayerID): string | null {
   if (G.actor !== p) return 'It is not your turn.'
   const r = currentRole(G)
   if (!r || !['builder', 'producer', 'trader'].includes(r.role)) return 'You cannot pass now.'
-  log(G, 'passes.', p)
+  log(G, { key: 'pass' }, p)
   doneActing(G)
   return null
 }
@@ -615,7 +625,7 @@ function endGame(G: SanJuanState, ctx: EngineCtx) {
   G.scores = scores
   G.winners = top.filter((s) => s.tiebreak === bestTie).map((s) => s.player)
   G.step = { kind: 'gameOver' }
-  log(G, `Game over! Winner: Player ${G.winners.join(' & Player ')} with ${best} VP.`)
+  log(G, { key: 'gameOver', winners: G.winners, vp: best })
 }
 
 /** Total number of cards anywhere — always 110 (used by tests). */

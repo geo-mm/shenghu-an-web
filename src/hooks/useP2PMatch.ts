@@ -23,7 +23,8 @@ export interface P2PMatch {
   players: MatchPlayer[]
   /** Host only: true once the PeerJS signaling server has registered our peer ID. */
   hostRegistered: boolean
-  error: string | null
+  /** PeerJS error; `type` 'unavailable-id' means the room token is taken. */
+  error: { type: string; message: string } | null
 }
 
 /**
@@ -70,11 +71,7 @@ export function useP2PMatch(config: MatchConfig | null): P2PMatch {
         isHost,
         peerOptions: peerOptions(),
         onError: (err: Error & { type?: string }) => {
-          const message =
-            err.type === 'unavailable-id'
-              ? 'That room token is already in use. Please host a new game.'
-              : `P2P error${err.type ? ` (${err.type})` : ''}: ${err.message}`
-          setMatch((m) => ({ ...m, error: message }))
+          setMatch((m) => ({ ...m, error: { type: err.type ?? '', message: err.message } }))
         },
       }),
     })

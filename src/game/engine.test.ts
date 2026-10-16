@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { Client } from 'boardgame.io/client'
-import { BUILDINGS, CARD_LIST, DECK_SIZE, HIDDEN_CARD, cardType, type BuildingType, type CardId } from './cards'
+import { BUILDINGS, CARD_LIST, DECK_SIZE, HIDDEN_CARD, cardType, type BuildingType, type CardId, type GoodType, type RoleId } from './cards'
+import { MESSAGES } from '../i18n/messages'
 import {
   actBuild,
   actChooseRole,
@@ -224,6 +225,12 @@ describe('full games through boardgame.io', () => {
         const end = client.getState()!
         expect(end.ctx.gameover, `game ${numPlayers}p seed ${seed} did not finish`).toBeTruthy()
         expect(end.G.scores).toHaveLength(numPlayers)
+        // Every log entry renders in both languages.
+        for (const lang of ['en', 'zh-TW'] as const) {
+          const t = MESSAGES[lang]
+          const helpers = { card: (b: BuildingType) => t.cards[b][0], good: (g: GoodType) => t.goods[g], role: (r: RoleId) => t.roles[r].name, who: (p: string) => t.who(p, false) }
+          for (const e of end.G.log) expect(t.log(e, helpers), `${lang} ${e.key}`).toMatch(/\S/)
+        }
         expect(Object.values(end.G.players).some((p) => p.buildings.length >= 12)).toBe(true)
         client.stop()
       }

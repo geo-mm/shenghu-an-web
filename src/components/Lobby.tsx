@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import type { MatchConfig } from '../hooks/useP2PMatch'
+import { useI18n } from '../i18n/I18n'
 
 // No 0/O/1/I/L to keep tokens easy to read aloud and type.
 const TOKEN_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
@@ -20,6 +21,7 @@ interface Props {
 }
 
 export function Lobby({ onStart, initialJoinToken = '' }: Props) {
+  const { t } = useI18n()
   const [joinToken, setJoinToken] = useState(initialJoinToken)
   const token = normalizeToken(joinToken)
 
@@ -31,31 +33,31 @@ export function Lobby({ onStart, initialJoinToken = '' }: Props) {
   return (
     <div className="lobby">
       <section className="panel">
-        <h2>Host a game</h2>
-        <p className="muted">Creates a room in this browser. Share the token with your opponent.</p>
+        <h2>{t.hostTitle}</h2>
+        <p className="muted">{t.hostHint}</p>
         <button
           className="primary"
           data-testid="host-btn"
           onClick={() => onStart({ role: 'host', token: generateToken() })}
         >
-          Host Game
+          {t.hostButton}
         </button>
       </section>
 
       <section className="panel">
-        <h2>Join a game</h2>
+        <h2>{t.joinTitle}</h2>
         <form onSubmit={join} className="join-form">
           <input
             data-testid="join-input"
             value={joinToken}
             onChange={(e) => setJoinToken(e.target.value)}
-            placeholder="Room token, e.g. K7PX2M"
-            aria-label="Room token"
+            placeholder={t.joinPlaceholder}
+            aria-label={t.roomToken}
             autoCapitalize="characters"
             spellCheck={false}
           />
           <button type="submit" data-testid="join-btn" disabled={!token}>
-            Join Game
+            {t.joinButton}
           </button>
         </form>
       </section>

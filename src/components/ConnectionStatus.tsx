@@ -1,13 +1,7 @@
 import type { MatchConfig, MatchPlayer } from '../hooks/useP2PMatch'
+import { useI18n } from '../i18n/I18n'
 
 export type LinkStatus = 'connecting' | 'waiting' | 'connected' | 'error'
-
-const LABELS: Record<LinkStatus, string> = {
-  connecting: 'Connecting',
-  waiting: 'Waiting for opponent',
-  connected: 'Connected',
-  error: 'Error',
-}
 
 interface Props {
   status: LinkStatus
@@ -17,25 +11,26 @@ interface Props {
 }
 
 export function ConnectionStatus({ status, config, players, myPlayerID }: Props) {
+  const { t } = useI18n()
   return (
     <section className="panel status-panel" aria-live="polite">
       <div className="status-row">
         <span className={`dot dot-${status}`} aria-hidden />
-        <strong data-testid="link-status">{LABELS[status]}</strong>
-        <span className="muted">
-          as {config.role === 'host' ? 'Host' : 'Guest'} · room <code>{config.token}</code>
-        </span>
+        <strong data-testid="link-status" data-status={status}>
+          {t.status[status]}
+        </strong>
+        <span className="muted">{t.asRole(config.role === 'host', config.token)}</span>
       </div>
 
-      <h3>Players</h3>
+      <h3>{t.players}</h3>
       <ul className="player-list" data-testid="player-list">
-        {players.length === 0 && <li className="muted">No player data yet…</li>}
+        {players.length === 0 && <li className="muted">{t.noPlayerData}</li>}
         {players.map((p) => (
           <li key={p.id}>
             <span className={`dot ${p.isConnected ? 'dot-connected' : 'dot-offline'}`} aria-hidden />
-            Player {p.id} {p.id === 0 ? '(Host)' : '(Guest)'}
-            {String(p.id) === myPlayerID && <span className="tag">you</span>}
-            <span className="muted">{p.isConnected ? 'online' : 'offline'}</span>
+            {t.playerLabel(p.id)} {p.id === 0 ? t.hostTag : t.guestTag}
+            {String(p.id) === myPlayerID && <span className="tag">{t.you}</span>}
+            <span className="muted">{p.isConnected ? t.online : t.offline}</span>
           </li>
         ))}
       </ul>

@@ -86,3 +86,24 @@ select { font: inherit; padding: 4px 8px; border-radius: 6px; border: 1px solid 
 .scores th, .scores td { padding: 4px 8px; border-bottom: 1px solid var(--border); text-align: center; }
 .scores tr.winner { background: var(--code-bg); font-weight: 600; }
 .table-scroll { overflow-x: auto; }
+
+/* ---- Language, role confirmation, card details ---- */
+.header-actions { display: flex; align-items: center; gap: 8px; }
+.lang-select { display: inline-flex; align-items: center; gap: 4px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.role-panel { display: flex; flex-direction: column; gap: 8px; }
+.role.picked { border-color: var(--accent); background: var(--code-bg); box-shadow: 0 0 0 2px var(--accent) inset; }
+.role-confirm p { margin: 0; }
+.role-confirm { padding: 12px 16px; }
+
+.modal-backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.45); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 10; }
+.modal { background: var(--panel); color: var(--text); border-radius: 12px; padding: 20px; width: min(380px, 100%); border-top: 10px solid var(--c, var(--accent)); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); }
+.modal h2 { margin: 0 0 2px; }
+.card-info-text { font-size: 1.05rem; margin: 12px 0; }
+.card-info dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0 0 16px; }
+.card-info dt { color: var(--muted); }
+.card-info dd { margin: 0; font-weight: 600; }
+.sj-card { -webkit-touch-callout: none; user-select: none; }
+@media (max-width: 480px) {
+  .app-header h1 { font-size: 1.3rem; }
+}

@@ -27,29 +27,27 @@ export interface PlayerState {
  * (mirrored into boardgame.io's `ctx.currentPlayer`).
  */
 export type Step =
-  /** Start of round: chapel tuck + hand limit, resolved player by player. */
-  | { kind: 'governor'; queue: PlayerID[] }
+  /**
+   * Start of round, resolved player by player: first the office building swap
+   * (`officeDone` marks it finished for `queue[0]`), then chapel, bank and hand limit.
+   */
+  | { kind: 'governor'; queue: PlayerID[]; officeDone?: boolean }
   /** `G.pickers[0]` picks one of the remaining roles. */
   | { kind: 'chooseRole' }
   /** Every player in `queue` (chooser first) resolves `role`; `queue[0]` is acting. */
   | { kind: 'role'; role: RoleId; chooser: PlayerID; queue: PlayerID[] }
   | { kind: 'gameOver' }
 
-export interface GoldMineReveal {
-  player: PlayerID
-  cards: CardId[]
-}
-
 /** Structured log entry, translated by the UI (see src/i18n). */
 export type LogEvent =
   | { key: 'roundStart'; governor: PlayerID }
   | { key: 'cannotBuild' | 'noEmptyProduction' | 'noGoods' | 'chapelTuck' | 'pass' }
   | { key: 'poorHouseDraw' | 'carpenterDraw' | 'wellDraw' | 'tavernDraw' | 'hutDraw' | 'customsGood' | 'harborStore' }
-  | { key: 'bankDeposit'; n: number }
+  | { key: 'bankDeposit' | 'officeSwap'; n: number }
   | { key: 'goldsmithKeep' | 'goldsmithMiss'; card: BuildingType }
   | { key: 'councilKeptAll' | 'prospect' | 'handLimitDiscard' | 'councilKeep'; n: number }
-  | { key: 'goldStrike' | 'goldMiss'; cards: BuildingType[] }
-  | { key: 'goldTake'; card: BuildingType }
+  | { key: 'goldStrike'; cards: BuildingType[]; card: BuildingType }
+  | { key: 'goldMiss'; cards: BuildingType[] }
   | { key: 'chooseRole'; role: RoleId }
   | { key: 'build'; card: BuildingType; n: number; over?: BuildingType }
   | { key: 'produce'; goods: GoodType[] }
@@ -94,7 +92,6 @@ export interface SanJuanState {
   tradeTiles: number[]
   /** Tile revealed for the current trader phase. */
   tradeTile: number | null
-  reveal: GoldMineReveal | null
   /** 2-player rule: the governor may use the library only once per round. */
   governorUsedLibrary: boolean
   log: LogEntry[]

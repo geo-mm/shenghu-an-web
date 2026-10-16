@@ -5,8 +5,8 @@ import {
   actBuild,
   actChooseRole,
   actCouncil,
-  actGoldMine,
   actGovernor,
+  actOfficeSwap,
   actPass,
   actProduce,
   actSell,
@@ -69,12 +69,12 @@ export function createSanJuanGame(options: GameOptions = {}): Game<SanJuanState>
     governorAction: move(({ G }, p, chapelCard: CardId | null, discards: CardId[], bankCards: CardId[] = []) =>
       actGovernor(G, p, chapelCard, discards, bankCards),
     ),
+    officeSwap: move(({ G, random }, p, cards: CardId[]) => actOfficeSwap(G, random, p, cards)),
     chooseRole: move(({ G, ctx }, p, role: RoleId) => actChooseRole(G, ctx, p, role)),
     build: move(({ G, ctx, random }, p, action: BuildAction) => actBuild(G, ctx, random, p, action)),
     produce: move(({ G, ctx, random }, p, indexes: number[]) => actProduce(G, ctx, random, p, indexes)),
     sell: move(({ G, ctx, random }, p, indexes: number[]) => actSell(G, ctx, random, p, indexes)),
     councilDiscard: move(({ G }, p, discards: CardId[]) => actCouncil(G, p, discards)),
-    goldMinePick: move(({ G }, p, card: CardId) => actGoldMine(G, p, card)),
     pass: move(({ G }, p) => actPass(G, p)),
   },
 

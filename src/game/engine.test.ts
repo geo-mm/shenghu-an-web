@@ -29,10 +29,10 @@ describe('card data', () => {
     expect(BUILDINGS.prefecture.cost).toBe(4) // second edition
   })
 
-  it('adds the expansion (without the office building, whose effect is unknown)', () => {
+  it('adds the 34-card expansion (the base game already has the sugar mills)', () => {
     const extra = deckCards(true).slice(BASE_DECK_SIZE).map((id) => CARD_LIST[id])
     expect(extra.filter((t) => BUILDINGS[t].kind === 'production')).toHaveLength(4)
-    expect(extra.filter((t) => BUILDINGS[t].kind === 'violet')).toHaveLength(27)
+    expect(extra.filter((t) => BUILDINGS[t].kind === 'violet')).toHaveLength(30)
     expect(extra).not.toContain('sugar_mill')
   })
 })
@@ -176,7 +176,7 @@ describe('scoring', () => {
     pl.chapel = cardsOf(G, 'indigo_plant', 2)
     const s = scorePlayer(G, '0')
     // VP: indigo 1 + statue 3 + hero 5 + sugar 1 = 10; chapel 2
-    // guild hall: 2 × 2 production = 4; city hall: 6 violet = 6; arch: 2 monuments = 6 → bonus 16
+    // guild hall: 2 production + 2 kinds = 4; city hall: 6 violet = 6; arch: 2 monuments = 6 → bonus 16
     // palace: floor(28 / 4) = 7
     expect(s).toMatchObject({ buildings: 10, stored: 2, bonus: 16, palace: 7, total: 35 })
   })
@@ -234,5 +234,32 @@ describe('playerView', () => {
     expect(G.players['1'].hand.every((c) => c === HIDDEN_CARD)).toBe(true)
     expect(G.players['0'].hand.every((c) => c >= 0)).toBe(true)
     client.stop()
+  })
+})
+
+describe('second-edition rules', () => {
+  it('guild hall: 1 VP per production building + 1 per different kind', () => {
+    const G = createInitialState(ctx2, identity)
+    for (const t of ['guild_hall', 'indigo_plant', 'indigo_plant', 'coffee_roaster'] as const) give(G, '0', t)
+    // 4 production buildings (3 indigo + coffee), 2 kinds → 6
+    expect(scorePlayer(G, '0').bonus).toBe(6)
+  })
+
+  it('gold mine keeps the cheapest card when all 4 costs differ, automatically', () => {
+    const G = createInitialState(ctx2, identity)
+    G.governor = '0'
+    G.pickers = ['0', '1', '0']
+    G.actor = '0'
+    give(G, '1', 'gold_mine')
+    const top = [...cardsOf(G, 'hero'), ...cardsOf(G, 'sugar_mill'), ...cardsOf(G, 'archive'), ...cardsOf(G, 'quarry')]
+    G.deck.push(...top, ...cardsOf(G, 'statue')) // statue on top: player 0's prospector draw
+    const hand = G.players['1'].hand.length
+    expect(actChooseRole(G, ctx2, '0', 'prospector')).toBeNull()
+    advance(G, ctx2, identity)
+    // costs 4, 1, 2, 5 → keeps the archive (cost 1) and the role ends without a decision
+    expect(G.players['1'].hand).toHaveLength(hand + 1)
+    expect(cardType(G.players['1'].hand.at(-1)!)).toBe('archive')
+    expect(G.step.kind).toBe('chooseRole')
+    expect(countAllCards(G)).toBe(110)
   })
 })

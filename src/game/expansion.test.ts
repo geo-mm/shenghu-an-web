@@ -5,6 +5,7 @@ import {
   actChooseRole,
   actCouncil,
   actGovernor,
+  actOfficeSwap,
   actPass,
   actSell,
   advance,
@@ -216,5 +217,41 @@ describe('residence and cathedral scoring', () => {
     give(G, '1', 'triumphal_arch')
     give(G, '1', 'residence')
     expect(scorePlayer(G, '0').bonus).toBe(10) // 5 buildings → capped at 4+
+  })
+})
+
+describe('office building', () => {
+  it('swaps up to 2 cards at the start of the round, before the hand limit', () => {
+    const G = newGame()
+    const me = G.players['0']
+    give(G, '0', 'office_building')
+    me.hand.push(...G.deck.splice(0, 5)) // 9 cards
+    G.step = { kind: 'governor', queue: ['0', '1'] }
+    advance(G, ctx2, identity)
+    expect(G.actor).toBe('0')
+    expect(actGovernor(G, '0', null, me.hand.slice(0, 2))).toMatch(/office building first/)
+    expect(actOfficeSwap(G, identity, '0', me.hand.slice(0, 3))).toMatch(/at most 2/)
+    const swapped = me.hand.slice(0, 2)
+    expect(actOfficeSwap(G, identity, '0', swapped)).toBeNull()
+    expect(me.hand).toHaveLength(9)
+    expect(me.hand.some((c) => swapped.includes(c))).toBe(false)
+    advance(G, ctx2, identity)
+    // Still player 0: now the hand limit (9 > 7).
+    expect(G.actor).toBe('0')
+    expect(actGovernor(G, '0', null, me.hand.slice(0, 2))).toBeNull()
+    expect(me.hand).toHaveLength(7)
+    expect(countAllCards(G)).toBe(TOTAL)
+  })
+
+  it('can be skipped', () => {
+    const G = newGame()
+    give(G, '0', 'office_building')
+    G.step = { kind: 'governor', queue: ['0', '1'] }
+    advance(G, ctx2, identity)
+    const hand = [...G.players['0'].hand]
+    expect(actOfficeSwap(G, identity, '0', [])).toBeNull()
+    advance(G, ctx2, identity)
+    expect(G.players['0'].hand).toEqual(hand)
+    expect(G.step.kind).toBe('chooseRole') // nobody else had anything to decide
   })
 })

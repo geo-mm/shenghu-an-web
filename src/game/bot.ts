@@ -11,6 +11,7 @@ import {
   maxGoodsPayment,
   maxProduce,
   maxSell,
+  needsOfficeSwap,
   owns,
   placementError,
   type EngineCtx,
@@ -28,6 +29,7 @@ export function legalActions(G: SanJuanState, ctx: EngineCtx): BotAction[] {
     case 'gameOver':
       return []
     case 'governor': {
+      if (needsOfficeSwap(G, p)) return [{ move: 'officeSwap', args: [[]] }, { move: 'officeSwap', args: [player.hand.slice(0, 2)] }]
       const options: BotAction[] = []
       const tucks = owns(player, 'chapel') && player.hand.length > 0 ? [null, player.hand[0]] : [null]
       for (const tuck of tucks) {
@@ -81,6 +83,6 @@ export function legalActions(G: SanJuanState, ctx: EngineCtx): BotAction[] {
       return [{ move: 'councilDiscard', args: [pool.slice(0, councilDiscardCount(player))] }]
     }
     case 'prospector':
-      return (G.reveal?.cards ?? []).map((c) => ({ move: 'goldMinePick', args: [c] }))
+      return [] // prospector turns are fully automatic
   }
 }

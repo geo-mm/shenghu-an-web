@@ -179,6 +179,13 @@ export function governorDiscardCount(G: SanJuanState, player: PlayerState, tucki
   return Math.max(0, player.hand.length - (tucking ? 1 : 0) - banking - handLimit(G, player))
 }
 
+/** Office building: may swap 1–2 hand cards at the start of the round (before the hand limit). */
+export function needsOfficeSwap(G: SanJuanState, p: PlayerID): boolean {
+  const step = G.step
+  return step.kind === 'governor' && step.queue[0] === p && !step.officeDone &&
+    owns(G.players[p], 'office_building') && G.players[p].hand.length > 0
+}
+
 function needsGovernorDecision(G: SanJuanState, player: PlayerState): boolean {
   const optional = (owns(player, 'chapel') || canUseBank(player)) && player.hand.length > 0
   return optional || player.hand.length > handLimit(G, player)
@@ -273,7 +280,6 @@ export function createInitialState(ctx: EngineCtx, rng: Rng, options: GameOption
     actor: governor,
     tradeTiles: rng.Shuffle(TRADE_TILES.map((_, i) => i)),
     tradeTile: null,
-    reveal: null,
     governorUsedLibrary: false,
     log: [],
     scores: null,
@@ -303,7 +309,12 @@ export function advance(G: SanJuanState, ctx: EngineCtx, rng: Rng): void {
     if (step.kind === 'gameOver') return
 
     if (step.kind === 'governor') {
-      while (step.queue.length > 0 && !needsGovernorDecision(G, G.players[step.queue[0]])) step.queue.shift()
+      while (step.queue.length > 0) {
+        const p = step.queue[0]
+        if (needsOfficeSwap(G, p) || needsGovernorDecision(G, G.players[p])) break
+        step.queue.shift()
+        step.officeDone = false
+      }
       if (step.queue.length > 0) {
         G.actor = step.queue[0]
         return
@@ -381,15 +392,18 @@ function startRoleTurn(G: SanJuanState, ctx: EngineCtx, rng: Rng, p: PlayerID): 
         }
       }
       if (!owns(player, 'gold_mine')) return false
+      // Gold mine: if the 4 cards all have different costs, the cheapest one is kept.
       const cards = drawCards(G, rng, 4)
       const costs = new Set(cards.map((c) => cardDef(c).cost))
       if (cards.length === 4 && costs.size === 4) {
-        G.reveal = { player: p, cards }
-        log(G, { key: 'goldStrike', cards: cards.map(cardType) }, p)
-        return true
+        const kept = cards.reduce((a, b) => (cardDef(b).cost < cardDef(a).cost ? b : a))
+        player.hand.push(kept)
+        G.discard.push(...cards.filter((c) => c !== kept))
+        log(G, { key: 'goldStrike', cards: cards.map(cardType), card: cardType(kept) }, p)
+      } else {
+        G.discard.push(...cards)
+        log(G, { key: 'goldMiss', cards: cards.map(cardType) }, p)
       }
-      G.discard.push(...cards)
-      log(G, { key: 'goldMiss', cards: cards.map(cardType) }, p)
       return false
     }
   }
@@ -437,6 +451,7 @@ function finishRole(G: SanJuanState, ctx: EngineCtx, rng: Rng) {
 
 /** Removes the acting player from the role queue once their decision is done. */
 function doneActing(G: SanJuanState) {
+  if (G.step.kind === 'governor') G.step.officeDone = false
   if (G.step.kind === 'role' || G.step.kind === 'governor') G.step.queue.shift()
 }
 
@@ -451,6 +466,25 @@ function checkTurn(G: SanJuanState, p: PlayerID, kind: 'governor' | 'chooseRole'
   return null
 }
 
+/** Office building: discard 0–2 hand cards and draw as many (0 = skip). */
+export function actOfficeSwap(G: SanJuanState, rng: Rng, p: PlayerID, cards: CardId[]): string | null {
+  const err = checkTurn(G, p, 'governor')
+  if (err) return err
+  if (!needsOfficeSwap(G, p)) return 'You have no office building swap now.'
+  if (cards.length > 2) return 'You may swap at most 2 cards.'
+  const player = G.players[p]
+  const hand = [...player.hand]
+  if (!takeCards(hand, cards)) return 'Choose distinct cards from your hand.'
+  player.hand = hand
+  G.discard.push(...cards)
+  if (cards.length > 0) {
+    drawToHand(G, rng, p, cards.length)
+    log(G, { key: 'officeSwap', n: cards.length }, p)
+  }
+  ;(G.step as { officeDone?: boolean }).officeDone = true
+  return null
+}
+
 export function actGovernor(
   G: SanJuanState,
   p: PlayerID,
@@ -460,6 +494,7 @@ export function actGovernor(
 ): string | null {
   const err = checkTurn(G, p, 'governor')
   if (err) return err
+  if (needsOfficeSwap(G, p)) return 'Resolve the office building first.'
   const player = G.players[p]
   if (chapelCard !== null && !owns(player, 'chapel')) return 'You have no chapel.'
   if (bankCards.length > 0 && !canUseBank(player)) return 'You have no unused bank.'
@@ -647,19 +682,6 @@ export function actCouncil(G: SanJuanState, p: PlayerID, discards: CardId[]): st
   return null
 }
 
-export function actGoldMine(G: SanJuanState, p: PlayerID, card: CardId): string | null {
-  const err = checkTurn(G, p, 'prospector')
-  if (err) return err
-  if (!G.reveal || G.reveal.player !== p) return 'You have no gold mine reveal.'
-  if (!G.reveal.cards.includes(card)) return 'Choose one of the revealed cards.'
-  G.players[p].hand.push(card)
-  G.discard.push(...G.reveal.cards.filter((c) => c !== card))
-  G.reveal = null
-  log(G, { key: 'goldTake', card: cardType(card) }, p)
-  doneActing(G)
-  return null
-}
-
 /** Declines the optional builder / producer / trader action. */
 export function actPass(G: SanJuanState, p: PlayerID): string | null {
   if (G.actor !== p) return 'It is not your turn.'
@@ -695,7 +717,11 @@ export function scorePlayer(G: SanJuanState, p: PlayerID): Score {
   const stored = player.chapel.length + player.bank.length + player.harbor.length
   const has = (t: BuildingType) => defs.some((d) => d.type === t)
   let bonus = 0
-  if (has('guild_hall')) bonus += 2 * defs.filter((d) => d.kind === 'production').length
+  if (has('guild_hall')) {
+    // 1 VP per production building, plus 1 VP per different kind of production building.
+    const production = defs.filter((d) => d.kind === 'production')
+    bonus += production.length + new Set(production.map((d) => d.type)).size
+  }
   if (has('city_hall')) bonus += defs.filter((d) => d.kind === 'violet').length
   if (has('triumphal_arch')) bonus += [0, 4, 6, 8][defs.filter((d) => d.monument).length]
   if (has('residence')) bonus += setBonus(residenceSets(player))
@@ -733,7 +759,7 @@ function endGame(G: SanJuanState, ctx: EngineCtx) {
 
 /** Total number of cards anywhere — constant for a game (used by tests). */
 export function countAllCards(G: SanJuanState): number {
-  let n = G.deck.length + G.discard.length + (G.reveal?.cards.length ?? 0)
+  let n = G.deck.length + G.discard.length
   for (const pl of Object.values(G.players)) {
     n += pl.hand.length + pl.chapel.length + pl.bank.length + pl.harbor.length + pl.pending.length
     n += pl.buildings.reduce((s, b) => s + 1 + (b.good !== null ? 1 : 0), 0)

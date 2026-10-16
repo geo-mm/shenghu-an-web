@@ -65,11 +65,15 @@ player `1`. The lobby currently seats 2 players; the rules engine supports 2–4
 - **Roles:** Builder (−1 card), Producer (+1 good), Trader (+1 good, trading house tile cycles
   top → bottom), Councillor (draw 5 instead of 2, keep 1), Prospector (draw 1).
 - **Base game:** all 110 cards; violet buildings are unique per player; library doubles
-  privileges (2 players: governor only once per round). Second-edition change applied:
-  prefecture costs 4.
-- **“New Buildings” expansion (optional, chosen by the host):** guard room, hut, tavern, bank,
-  customs office, park, harbor, goldsmith, residence, cathedral, plus 4 extra production
-  buildings. The office building is not included yet (its effect is still to be confirmed).
+  privileges (2 players: governor only once per round). Second-edition rules: prefecture costs 4,
+  the gold mine automatically keeps the cheapest of 4 differently-priced cards, and the guild hall
+  scores 1 VP per production building plus 1 VP per different kind.
+- **Card data** (costs, VP, trading house tiles, zh-TW names) was checked against the Traditional
+  Chinese second edition.
+- **“New Buildings” expansion (optional, chosen by the host):** all 34 cards — office building,
+  guard room, hut, tavern, bank, customs office, park, harbor, goldsmith, residence, cathedral,
+  plus 4 extra production buildings. The office building swap happens at the start of the round,
+  before the hand limit is checked.
 - **End:** after a builder phase in which someone reaches 12 buildings. Score = building VP +
   cards under the chapel / in the bank / under the harbor + guild hall, city hall, triumphal
   arch, residence and cathedral bonuses, then palace (+¼). Tie-break: cards in hand + goods.
@@ -78,17 +82,16 @@ player `1`. The lobby currently seats 2 players; the rules engine supports 2–4
 
 ### Interpretations to double-check
 
-1. Trading house tile prices (`TRADE_TILES` in `cards.ts`).
-2. A building's ability works only from the action *after* it is built.
-3. Goods of the same type may be sold together.
-4. Guild hall = 2 VP per production building (first-edition wording; the 2nd edition may differ).
-5. Gold mine needs 4 revealed cards with 4 different costs; its card pick is mandatory.
-6. Tavern: ties for the fewest buildings count as “fewest”.
-7. Cathedral counts the cost-6 buildings of all opponents together.
-8. Residence: a set is 3 different building types with the same cost; each building is used once.
-9. Customs office receives a good on its owner's councillor turn only if it is empty; the
+1. A building's ability works only from the action *after* it is built.
+2. Goods of the same type may be sold together.
+3. Library: the 2-player limit (governor once per round) comes from first-edition summaries.
+4. Gold mine: fewer than 4 cards left in deck and discard counts as a miss.
+5. Tavern: ties for the fewest buildings count as “fewest”.
+6. Cathedral counts the cost-6 buildings of all opponents together.
+7. Residence: a set is 3 different building types with the same cost; each building is used once.
+8. Customs office receives a good on its owner's councillor turn only if it is empty; the
    customs good also counts as a good for the black market, market stand and tie-break.
-10. Harbor: one sold good is always kept (automatic). Goldsmith: the turned-up card is discarded
+9. Harbor: one sold good is always kept (automatic). Goldsmith: the turned-up card is discarded
     if any player, including you, already has that building.
 
 ## Signaling

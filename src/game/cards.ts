@@ -45,8 +45,9 @@ export type BuildingType =
   | 'city_hall'
   | 'triumphal_arch'
   | 'palace'
-  // "New Buildings" expansion (Office Building not implemented yet: its effect is unknown)
+  // "New Buildings" expansion
   | 'guard_room'
+  | 'office_building'
   | 'hut'
   | 'tavern'
   | 'bank'
@@ -115,6 +116,7 @@ export const BUILDINGS: Record<BuildingType, BuildingDef> = {
 
   // "New Buildings" expansion
   guard_room: { type: 'guard_room', kind: 'violet', cost: 1, vp: 1, count: 0, expansion: 3, phase: 'governor' },
+  office_building: { type: 'office_building', kind: 'violet', cost: 1, vp: 1, count: 0, expansion: 3, phase: 'governor' },
   hut: { type: 'hut', kind: 'violet', cost: 1, vp: 1, count: 0, expansion: 3, phase: 'trader' },
   tavern: { type: 'tavern', kind: 'violet', cost: 2, vp: 1, count: 0, expansion: 3, phase: 'builder' },
   bank: { type: 'bank', kind: 'violet', cost: 3, vp: 2, count: 0, expansion: 3, phase: 'governor' },

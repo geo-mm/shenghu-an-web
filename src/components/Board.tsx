@@ -4,6 +4,7 @@ import {
   buildCost,
   canUseBank,
   councilDiscardCount,
+  needsOfficeSwap,
   governorDiscardCount,
   maxGoodsPayment,
   maxProduce,
@@ -170,12 +171,18 @@ interface MyAreaProps {
 /** My buildings, hand and the controls for whatever I must decide now. */
 function MyArea({ G, ctx, playerID, moves }: MyAreaProps) {
   const { t } = useI18n()
-  const who = useWho(playerID)
   const cardName = (c: CardId) => t.cards[cardDef(c).type][0]
   const me = G.players[playerID]
   const step = G.step
   const myTurn = G.actor === playerID
-  const mode = !myTurn || step.kind === 'gameOver' || step.kind === 'chooseRole' ? 'idle' : step.kind === 'governor' ? 'governor' : step.role
+  const mode =
+    !myTurn || step.kind === 'gameOver' || step.kind === 'chooseRole'
+      ? 'idle'
+      : step.kind === 'governor'
+        ? needsOfficeSwap(G, playerID)
+          ? 'office'
+          : 'governor'
+        : step.role
 
   const [handSel, setHandSel] = useState<CardId[]>([])
   const [bldSel, setBldSel] = useState<number[]>([])
@@ -190,7 +197,7 @@ function MyArea({ G, ctx, playerID, moves }: MyAreaProps) {
 
   // What clicking a hand card / building does in this mode.
   const archive = owns(me, 'archive')
-  const handClickable = mode === 'builder' || mode === 'governor' || (mode === 'councillor' && archive)
+  const handClickable = mode === 'builder' || mode === 'governor' || mode === 'office' || (mode === 'councillor' && archive)
   const onHandClick = (c: CardId) => {
     if (mode === 'builder') {
       if (target === null) setTarget(c)
@@ -208,6 +215,8 @@ function MyArea({ G, ctx, playerID, moves }: MyAreaProps) {
         setBankSel(bankSel.filter((x) => x !== c))
         setHandSel(toggle(handSel, c))
       }
+    } else if (mode === 'office') {
+      if (handSel.includes(c) || handSel.length < 2) setHandSel(toggle(handSel, c))
     } else if (mode === 'councillor') setPendSel(toggle(pendSel, c))
   }
   const buildingClickable = (i: number) => {
@@ -219,7 +228,19 @@ function MyArea({ G, ctx, playerID, moves }: MyAreaProps) {
   }
 
   let panel: ReactNode = null
-  if (mode === 'governor') {
+  if (mode === 'office') {
+    panel = (
+      <>
+        <p>{t.officePrompt(handSel.length)}</p>
+        <div className="actions">
+          <button className="primary" data-testid="office-swap" disabled={handSel.length === 0} onClick={() => moves.officeSwap(handSel)}>
+            {t.officeSwap}
+          </button>
+          <button onClick={() => moves.officeSwap([])}>{t.skip}</button>
+        </div>
+      </>
+    )
+  } else if (mode === 'governor') {
     const hasChapel = owns(me, 'chapel')
     const hasBank = canUseBank(me)
     const need = governorDiscardCount(G, me, tuck !== null, bankSel.length)
@@ -351,36 +372,15 @@ function MyArea({ G, ctx, playerID, moves }: MyAreaProps) {
         </div>
       </>
     )
-  } else if (mode === 'prospector' && G.reveal) {
-    panel = (
-      <>
-        <p data-testid="gold-mine-pick">{t.goldMinePick}</p>
-        <div className="cards-row">
-          {G.reveal.cards.map((c) => (
-            <CardView key={c} id={c} onClick={() => moves.goldMinePick(c)} />
-          ))}
-        </div>
-      </>
-    )
   } else if (G.step.kind === 'role' && G.step.role === 'trader' && G.tradeTile !== null) {
     panel = <TradeTile tile={G.tradeTile} t={t} />
-  } else if (G.reveal) {
-    panel = (
-      <>
-        <p>{t.goldMineReveal(who(G.reveal.player))}</p>
-        <div className="cards-row">
-          {G.reveal.cards.map((c) => (
-            <CardView key={c} id={c} />
-          ))}
-        </div>
-      </>
-    )
   }
 
   const handTag = (c: CardId) => {
     if (mode === 'builder') return c === target ? t.tags.build : handSel.includes(c) ? t.tags.pay : undefined
     if (mode === 'governor')
       return handSel.includes(c) ? t.tags.discard : bankSel.includes(c) ? t.tags.bank : c === tuck ? t.tags.chapel : undefined
+    if (mode === 'office') return handSel.includes(c) ? t.tags.swap : undefined
     if (mode === 'councillor') return pendSel.includes(c) ? t.tags.discard : undefined
   }
   const buildingTag = mode === 'producer' ? t.tags.produce : mode === 'trader' ? t.tags.sell : t.tags.pay

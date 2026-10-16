@@ -53,7 +53,7 @@ const en = {
   governorIs: (who: string) => `Governor: ${who}`,
   governorTag: 'governor',
   stepGameOver: 'Game over',
-  stepGovernor: 'Governor phase: chapel and hand limit',
+  stepGovernor: 'Start of round: office building, chapel, bank and hand limit',
   stepChooseRole: (who: string, me: boolean) => `${who} ${me ? 'choose' : 'chooses'} a role`,
   stepRole: (role: string, who: string) => `${role} phase (chosen by ${who})`,
   deckDiscard: (deck: number, discard: number) => `Deck ${deck} · Discard ${discard}`,
@@ -89,6 +89,9 @@ const en = {
   assignDiscard: 'discards it',
   assignBank: 'puts it in the bank',
   customsPrice: (n: number) => `customs office ${n}`,
+  officePrompt: (sel: number) => `Office building: select up to 2 hand cards to swap for new ones (${sel}/2), or skip.`,
+  officeSwap: 'Swap',
+  skip: 'Skip',
   none: '— none —',
   buildPick: 'Click a card in your hand to build it.',
   buildPay: (card: string, cost: number, paid: number) => `Building ${card}: costs ${s(cost, 'card')}. Select payment cards (${paid}/${cost}).`,
@@ -99,8 +102,6 @@ const en = {
   sellPrompt: (max: number, sel: number) => `Select up to ${s(max, 'good')} to sell (${sel}/${max}).`,
   councilPrompt: (drawn: number, need: number, archive: boolean) =>
     `You drew ${s(drawn, 'card')}. Select ${s(need, 'card')} to discard${archive ? ' (archive: from drawn cards or your hand)' : ''}.`,
-  goldMinePick: 'Gold mine: all four costs differ — take one card.',
-  goldMineReveal: (who: string) => `${who}'s gold mine reveals:`,
   tradeTile: 'Trading house tile',
   placement: {
     needCrane: 'You need a crane to build over a building.',
@@ -108,7 +109,7 @@ const en = {
     maxBuildings: 'You already have 12 buildings.',
     violetUnique: 'You already own this violet building; violet buildings are unique.',
   } satisfies Record<PlacementError, string>,
-  tags: { build: 'build', pay: 'pay', discard: 'discard', chapel: 'chapel', bank: 'bank', produce: 'produce', sell: 'sell' },
+  tags: { build: 'build', pay: 'pay', discard: 'discard', chapel: 'chapel', bank: 'bank', swap: 'swap', produce: 'produce', sell: 'sell' },
   good: 'good',
 
   gameLog: 'Game log',
@@ -143,11 +144,11 @@ const en = {
     coffee_roaster: ['Coffee roaster', 'Produces coffee.'],
     silver_smelter: ['Silver smelter', 'Produces silver.'],
     smithy: ['Smithy', 'Builder: production buildings cost 1 card less.'],
-    gold_mine: ['Gold mine', 'Prospector: reveal 4 cards; if all have different costs, take 1 into your hand.'],
+    gold_mine: ['Gold mine', 'Prospector: turn up 4 cards; if their costs all differ, you keep the cheapest one and the rest are discarded.'],
     archive: ['Archive', 'Councillor: you may discard from your whole hand, not only the drawn cards.'],
     poor_house: ['Poor house', 'Builder: after building, if you have 0 or 1 cards in hand, draw 1 card.'],
     black_market: ['Black market', 'Builder: you may pay with up to 2 goods (1 card each).'],
-    trading_post: ['Trading post', 'Trader: you may sell 1 additional good.'],
+    trading_post: ['Trading house', 'Trader: you may sell 1 additional good.'],
     well: ['Well', 'Producer: if you produce 2 or more goods, draw 1 card.'],
     market_stand: ['Market stand', 'Trader: if you sell 2 or more goods, draw 1 card.'],
     crane: ['Crane', 'Builder: you may build over one of your buildings, paying only the difference.'],
@@ -162,11 +163,12 @@ const en = {
     statue: ['Statue', 'Monument: victory points only.'],
     victory_column: ['Victory column', 'Monument: victory points only.'],
     hero: ['Hero', 'Monument: victory points only.'],
-    guild_hall: ['Guild hall', 'Game end: 2 VP per production building.'],
+    guild_hall: ['Guild hall', 'Game end: 1 VP per production building, plus 1 VP for each different kind of production building you own.'],
     city_hall: ['City hall', 'Game end: 1 VP per violet building (including this one).'],
     triumphal_arch: ['Triumphal arch', 'Game end: 4 / 6 / 8 VP for 1 / 2 / 3 monuments.'],
     palace: ['Palace', 'Game end: +1 VP per 4 VP you have (rounded down).'],
     guard_room: ['Guard room', 'Start of round: while you own this, every player without a guard room may keep only 6 cards (tower owners still keep 12).'],
+    office_building: ['Office building', 'Start of round: you may get rid of 1 or 2 hand cards and draw the same number of new ones.'],
     hut: ['Hut', 'Trader: if the whole phase passes without anyone selling a good, draw 1 card.'],
     tavern: ['Tavern', 'Builder: when the phase ends, draw 1 card if nobody has fewer buildings than you.'],
     bank: ['Bank', 'Once per game, at the start of a round: stash as many hand cards as you like in the bank; each is worth 1 VP at the end.'],
@@ -195,15 +197,15 @@ const en = {
       case 'customsGood': return 'places a good on the customs office.'
       case 'harborStore': return 'keeps a sold good under the harbor.'
       case 'bankDeposit': return `deposits ${s(e.n, 'card')} in the bank.`
+      case 'officeSwap': return `swaps ${s(e.n, 'card')} (office building).`
       case 'goldsmithKeep': return `turns up a ${t.card(e.card)} with the goldsmith and keeps it.`
       case 'goldsmithMiss': return `turns up a ${t.card(e.card)} with the goldsmith, but it is already built.`
       case 'councilKeptAll': return `drew and kept ${s(e.n, 'card')}.`
       case 'prospect': return `prospects and draws ${s(e.n, 'card')}.`
       case 'handLimitDiscard': return `discards ${s(e.n, 'card')} down to the hand limit.`
       case 'councilKeep': return `keeps ${s(e.n, 'card')} as councillor.`
-      case 'goldStrike': return `strikes gold: ${list(e.cards.map(t.card))}.`
+      case 'goldStrike': return `strikes gold (${list(e.cards.map(t.card))}) and keeps the cheapest: ${t.card(e.card)}.`
       case 'goldMiss': return `finds no gold (${list(e.cards.map(t.card)) || 'no cards'}).`
-      case 'goldTake': return `takes the ${t.card(e.card)} from the gold mine.`
       case 'chooseRole': return `chooses the ${t.role(e.role)}.`
       case 'build': return e.over
         ? `builds a ${t.card(e.card)} over the ${t.card(e.over)} for ${s(e.n, 'card')}.`
@@ -253,7 +255,7 @@ const zhTW: Messages = {
   governorIs: (who) => `總督：${who}`,
   governorTag: '總督',
   stepGameOver: '遊戲結束',
-  stepGovernor: '總督階段：禮拜堂與手牌上限',
+  stepGovernor: '回合開始：辦公大樓、教堂、銀行與手牌上限',
   stepChooseRole: (who) => zj(who, '選擇角色'),
   stepRole: (role, who) => `${role}階段（由${zj(who, '選擇')}）`,
   deckDiscard: (deck, discard) => `牌堆 ${deck} · 棄牌堆 ${discard}`,
@@ -267,9 +269,9 @@ const zhTW: Messages = {
   cancel: '取消',
 
   inHand: (n) => `手牌 ${n} 張`,
-  underChapel: (n) => `禮拜堂下 ${n} 張`,
+  underChapel: (n) => `教堂下 ${n} 張`,
   stored: (chapel, bank, harbor) =>
-    [chapel && `禮拜堂下 ${chapel} 張`, bank && `銀行 ${bank} 張`, harbor && `港口下 ${harbor} 張`].filter(Boolean).join(' · '),
+    [chapel && `教堂下 ${chapel} 張`, bank && `銀行 ${bank} 張`, harbor && `港口下 ${harbor} 張`].filter(Boolean).join(' · '),
   buildingsCount: (n) => `建築 ${n} 棟`,
   youPlayer: (id) => `你（玩家 ${id}）`,
   buildingsTitle: (n) => `建築（${n}/12）`,
@@ -281,14 +283,17 @@ const zhTW: Messages = {
   pass: '跳過',
   produce: '生產',
   sell: '販賣',
-  chapelPrompt: '你可以將 1 張手牌蓋在禮拜堂下（遊戲結束時 1 分）。',
+  chapelPrompt: '你可以把 1 張手牌壓在教堂下（終局 1 分）。',
   discardPrompt: (n) => (n > 0 ? `請選擇 ${n} 張牌棄掉，讓手牌符合上限。` : '不需要棄牌。'),
-  tuckLabel: '蓋在禮拜堂下：',
+  tuckLabel: '壓在教堂下：',
   bankPrompt: '銀行（整場限一次）：可以把任意張手牌存進銀行，終局每張 1 分。',
   assignLabel: '點手牌時：',
   assignDiscard: '棄掉',
   assignBank: '存進銀行',
   customsPrice: (n) => `海關 ${n}`,
+  officePrompt: (sel) => `辦公大樓：最多選 2 張手牌換成新牌（${sel}/2），也可以跳過。`,
+  officeSwap: '換牌',
+  skip: '跳過',
   none: '— 不蓋 —',
   buildPick: '點選一張手牌來建造。',
   buildPay: (card, cost, paid) => `建造${card}：需要 ${cost} 張牌，請選擇付款的手牌（${paid}/${cost}）。`,
@@ -297,9 +302,7 @@ const zhTW: Messages = {
   craneNone: '— 不覆蓋（新建築）—',
   producePrompt: (max, sel) => `最多選擇 ${max} 棟空的生產建築來生產（${sel}/${max}）。`,
   sellPrompt: (max, sel) => `最多選擇 ${max} 個貨物來販賣（${sel}/${max}）。`,
-  councilPrompt: (drawn, need, archive) => `你抽了 ${drawn} 張牌，請選擇 ${need} 張棄掉${archive ? '（檔案館：可從新抽的牌或手牌中選）' : ''}。`,
-  goldMinePick: '金礦：四張牌的費用都不同，選一張加入手牌。',
-  goldMineReveal: (who) => zj(who, '的金礦翻出：'),
+  councilPrompt: (drawn, need, archive) => `你抽了 ${drawn} 張牌，請選擇 ${need} 張棄掉${archive ? '（檔案室：可從新抽的牌或手牌中選）' : ''}。`,
   tradeTile: '交易所價格板',
   placement: {
     needCrane: '需要起重機才能蓋在舊建築上。',
@@ -307,14 +310,14 @@ const zhTW: Messages = {
     maxBuildings: '你已經有 12 棟建築。',
     violetUnique: '你已經有這棟紫色建築了；每種紫色建築只能有一棟。',
   },
-  tags: { build: '建造', pay: '付款', discard: '棄掉', chapel: '禮拜堂', bank: '銀行', produce: '生產', sell: '販賣' },
+  tags: { build: '建造', pay: '付款', discard: '棄掉', chapel: '教堂', bank: '銀行', swap: '換掉', produce: '生產', sell: '販賣' },
   good: '貨物',
 
   gameLog: '遊戲紀錄',
   youWin: '🏆 你贏了！',
   winner: (names) => `勝利者：${names}`,
-  scoreCols: ['玩家', '建築', '存放的牌', '加分', '宮殿', '總分', '平手判定'],
-  storedTitle: '禮拜堂下、銀行裡和港口下的牌',
+  scoreCols: ['玩家', '建築', '存放的牌', '加分', '皇宮', '總分', '平手判定'],
+  storedTitle: '教堂下、銀行裡和港口下的牌',
   tiebreakTitle: '手牌數 + 貨物數',
 
   close: '關閉',
@@ -322,55 +325,56 @@ const zhTW: Messages = {
   vp: '分數',
   vpVariable: '視情況而定（遊戲結束時計算）',
   copies: '牌堆張數',
-  kind: { production: '生產建築', violet: '紫色建築', monument: '紀念碑' },
+  kind: { production: '工廠建築', violet: '城市建築', monument: '紀念碑' },
   produces: '生產',
 
-  goods: { indigo: '染料', sugar: '糖', tobacco: '菸草', coffee: '咖啡', silver: '銀', customs: '海關貨物' },
+  goods: { indigo: '染料', sugar: '砂糖', tobacco: '菸草', coffee: '咖啡', silver: '銀錠', customs: '海關貨物' },
   roles: {
     builder: { name: '建築師', action: '每位玩家可以建造 1 棟建築。', privilege: '建造時少付 1 張牌。' },
-    producer: { name: '生產者', action: '每位玩家可以生產 1 個貨物。', privilege: '多生產 1 個貨物。' },
-    trader: { name: '商人', action: '每位玩家可以賣出 1 個貨物。', privilege: '多賣 1 個貨物。' },
+    producer: { name: '製造商', action: '每位玩家可以生產 1 個貨物。', privilege: '多生產 1 個貨物。' },
+    trader: { name: '貿易商', action: '每位玩家可以賣出 1 個貨物。', privilege: '多賣 1 個貨物。' },
     councillor: { name: '議員', action: '每位玩家抽 2 張牌，保留 1 張。', privilege: '改抽 5 張牌。' },
     prospector: { name: '礦工', action: '其他玩家沒有行動。', privilege: '抽 1 張牌。' },
   },
 
   cards: {
-    indigo_plant: ['染料廠', '生產染料。'],
-    sugar_mill: ['製糖廠', '生產糖。'],
-    tobacco_storage: ['菸草廠', '生產菸草。'],
-    coffee_roaster: ['咖啡烘焙廠', '生產咖啡。'],
-    silver_smelter: ['煉銀廠', '生產銀。'],
-    smithy: ['鐵匠鋪', '建築階段：蓋生產建築少付 1 張牌。'],
-    gold_mine: ['金礦', '淘金階段：翻開 4 張牌，若費用全部不同，選 1 張加入手牌。'],
-    archive: ['檔案館', '議員階段：可以從整副手牌（包含新抽的牌）中棄牌，不只限於新抽的牌。'],
-    poor_house: ['救濟院', '建築階段：蓋完建築後，若手牌只剩 0 或 1 張，抽 1 張牌。'],
-    black_market: ['黑市', '建築階段：可用最多 2 個貨物付款（每個抵 1 張牌）。'],
-    trading_post: ['交易站', '商人階段：可以多賣 1 個貨物。'],
-    well: ['水井', '生產階段：若生產 2 個以上貨物，抽 1 張牌。'],
-    market_stand: ['攤販', '商人階段：若賣出 2 個以上貨物，抽 1 張牌。'],
-    crane: ['起重機', '建築階段：可以把新建築蓋在自己的舊建築上，只需支付差額。'],
-    chapel: ['禮拜堂', '總督階段：可將 1 張手牌蓋在禮拜堂下，遊戲結束時每張 1 分。'],
-    tower: ['高塔', '總督階段：手牌上限從 7 張提高為 12 張。'],
-    aqueduct: ['水道橋', '生產階段：可以多生產 1 個貨物。'],
-    carpenter: ['木工場', '建築階段：蓋完紫色建築後，抽 1 張牌。'],
-    prefecture: ['省政府', '議員階段：多保留 1 張牌。'],
-    market_hall: ['市場', '商人階段：至少賣出 1 個貨物時，多抽 1 張牌。'],
-    quarry: ['採石場', '建築階段：蓋紫色建築少付 1 張牌。'],
-    library: ['圖書館', '你選擇的角色特權加倍。（2 人遊戲：總督每回合只能使用一次。）'],
-    statue: ['雕像', '紀念碑：只提供分數。'],
-    victory_column: ['勝利紀念柱', '紀念碑：只提供分數。'],
-    hero: ['英雄像', '紀念碑：只提供分數。'],
-    guild_hall: ['同業公會', '遊戲結束：每棟生產建築得 2 分。'],
-    city_hall: ['市政廳', '遊戲結束：每棟紫色建築得 1 分（包含本建築）。'],
-    triumphal_arch: ['凱旋門', '遊戲結束：擁有 1／2／3 座紀念碑時，得 4／6／8 分。'],
-    palace: ['宮殿', '遊戲結束：總分每 4 分額外加 1 分（無條件捨去）。'],
-    guard_room: ['警衛室', '每回合開始：只要你有這棟建築，沒有警衛室的其他玩家手牌最多只能留 6 張（有高塔的人仍可留 12 張）。'],
+    indigo_plant: ['染坊', '生產階段：可以生產 1 份染料。'],
+    sugar_mill: ['製糖廠', '生產階段：可以生產 1 份砂糖。'],
+    tobacco_storage: ['菸草廠', '生產階段：可以生產 1 份菸草。'],
+    coffee_roaster: ['咖啡烘焙廠', '生產階段：可以生產 1 份咖啡。'],
+    silver_smelter: ['煉銀廠', '生產階段：可以生產 1 份銀錠。'],
+    smithy: ['鐵匠鋪', '建築階段：蓋工廠建築時，費用便宜 1 張牌。'],
+    gold_mine: ['金礦', '礦工階段：翻開 4 張牌；如果 4 張的費用都不一樣，最便宜的那張歸你，其餘棄掉。'],
+    archive: ['檔案室', '議員階段：要棄的牌不限於新抽的牌，也可以從原本的手牌裡挑。'],
+    poor_house: ['濟貧院', '建築階段：蓋好建築後手上只剩 0～1 張牌時，補抽 1 張。'],
+    black_market: ['黑市', '建築階段：最多可拿 2 份貨物抵建造費，每份抵 1 張牌。'],
+    trading_post: ['貿易站', '交易階段：可以多賣 1 份貨物。'],
+    well: ['水井', '生產階段：一次生產 2 份以上貨物時，補抽 1 張牌。'],
+    market_stand: ['攤販', '交易階段：一次賣出 2 份以上貨物時，補抽 1 張牌。'],
+    crane: ['起重機', '建築階段：可以拆掉自己的一棟建築改蓋新的，只付兩者費用的差額（最少 0）。'],
+    chapel: ['教堂', '回合開始：可以把 1 張手牌壓在教堂下，終局時每張算 1 分。'],
+    tower: ['高塔', '回合開始：你的手牌上限變成 12 張。'],
+    aqueduct: ['上水道', '生產階段：可以多生產 1 份貨物。'],
+    carpenter: ['木工坊', '建築階段：每蓋好一棟城市建築，補抽 1 張牌。'],
+    prefecture: ['總督府', '議員階段：抽完牌後可以多留 1 張。'],
+    market_hall: ['市場', '交易階段：只要有賣出貨物，就多拿 1 張牌。'],
+    quarry: ['採石場', '建築階段：蓋城市建築時，費用便宜 1 張牌。'],
+    library: ['圖書館', '所有階段：你選的職業，特權效果變成兩倍。（2 人遊戲：總督每回合只能用一次。）'],
+    statue: ['雕像', '紀念碑：沒有特殊能力，只提供分數。'],
+    victory_column: ['勝利紀念柱', '紀念碑：沒有特殊能力，只提供分數。'],
+    hero: ['英雄像', '紀念碑：沒有特殊能力，只提供分數。'],
+    guild_hall: ['公會大廳', '遊戲結束：每棟工廠建築加 1 分，你擁有的工廠建築每多一種，再加 1 分。'],
+    city_hall: ['市政廳', '遊戲結束：每棟城市建築（含市政廳本身）加 1 分。'],
+    triumphal_arch: ['凱旋門', '遊戲結束：擁有 1／2／3 座紀念碑時，分別加 4／6／8 分。'],
+    palace: ['皇宮', '遊戲結束：總分每滿 4 分，再加 1 分。'],
+    guard_room: ['警衛室', '回合開始：只要你有這棟建築，沒有警衛室的其他玩家手牌最多只能留 6 張（有高塔的人仍可留 12 張）。'],
+    office_building: ['辦公大樓', '回合開始：可以換牌——丟掉 1～2 張手牌，再抽回一樣多張。'],
     hut: ['茅屋', '交易階段：如果整個階段都沒有人賣出貨物，你補 1 張牌。'],
     tavern: ['酒館', '建築階段：階段結束時，若沒有人的建築比你少，你補 1 張牌。'],
     bank: ['銀行', '整場遊戲限用一次：在某回合開始時，把想要的張數手牌存進銀行，終局每張算 1 分。'],
-    customs_office: ['海關', '議員階段：海關若是空的，就在上面放 1 個貨物。交易階段：賣掉這個貨物固定換 2 張牌。'],
+    customs_office: ['海關', '議員階段：海關若是空的，就在上面放 1 份貨物。交易階段：賣掉這份貨物固定換 2 張牌。'],
     park: ['公園', '建築階段：用起重機把公園改建成別的建築時，新建築便宜 6 張牌（最低 0）。'],
-    harbor: ['港口', '交易階段：賣出的貨物中，留 1 張面朝下收在港口下，終局算 1 分。'],
+    harbor: ['港口', '交易階段：賣出的貨物中，留 1 份面朝下收在港口下，終局算 1 分。'],
     goldsmith: ['金工坊', '礦工階段：翻開 1 張牌，若場上還沒有人蓋過這種建築就收進手牌，否則棄掉。'],
     residence: ['官邸', '遊戲結束：同費用的 3 種不同建築湊成一組；1／2／3／4 組以上分別加 4／7／9／10 分。'],
     cathedral: ['大教堂', '遊戲結束：對手們合計擁有 1／2／3／4 棟以上的 6 元建築時，你分別得到 4／7／9／10 分。'],
@@ -383,25 +387,25 @@ const zhTW: Messages = {
       case 'cannotBuild': return '沒有可以建造的建築。'
       case 'noEmptyProduction': return '沒有空的生產建築。'
       case 'noGoods': return '沒有貨物可賣。'
-      case 'chapelTuck': return '將 1 張牌蓋在禮拜堂下。'
+      case 'chapelTuck': return '將 1 張牌壓在教堂下。'
       case 'pass': return '跳過。'
-      case 'poorHouseDraw': return '抽 1 張牌（救濟院）。'
-      case 'carpenterDraw': return '抽 1 張牌（木工場）。'
+      case 'poorHouseDraw': return '抽 1 張牌（濟貧院）。'
+      case 'carpenterDraw': return '抽 1 張牌（木工坊）。'
       case 'wellDraw': return '抽 1 張牌（水井）。'
       case 'tavernDraw': return '抽 1 張牌（酒館）。'
       case 'hutDraw': return '抽 1 張牌（茅屋）。'
       case 'customsGood': return '在海關放上 1 個貨物。'
       case 'harborStore': return '把 1 個賣出的貨物收進港口。'
       case 'bankDeposit': return `把 ${e.n} 張牌存進銀行。`
+      case 'officeSwap': return `用辦公大樓換了 ${e.n} 張牌。`
       case 'goldsmithKeep': return `用金工坊翻到${t.card(e.card)}，收進手牌。`
       case 'goldsmithMiss': return `用金工坊翻到${t.card(e.card)}，但已有人蓋過，棄掉。`
       case 'councilKeptAll': return `抽了 ${e.n} 張牌並全部保留。`
-      case 'prospect': return `淘金，抽 ${e.n} 張牌。`
+      case 'prospect': return `擔任礦工，抽 ${e.n} 張牌。`
       case 'handLimitDiscard': return `棄掉 ${e.n} 張牌以符合手牌上限。`
       case 'councilKeep': return `擔任議員，保留 ${e.n} 張牌。`
-      case 'goldStrike': return `挖到金礦：${list(e.cards.map(t.card))}。`
-      case 'goldMiss': return `沒挖到金礦（${list(e.cards.map(t.card)) || '沒有牌'}）。`
-      case 'goldTake': return `從金礦拿走${t.card(e.card)}。`
+      case 'goldStrike': return `金礦翻出${list(e.cards.map(t.card))}，費用都不同，收下最便宜的${t.card(e.card)}。`
+      case 'goldMiss': return `金礦翻出${list(e.cards.map(t.card)) || '（沒有牌）'}，費用有重複，全部棄掉。`
       case 'chooseRole': return `選擇了${t.role(e.role)}。`
       case 'build': return e.over
         ? `把${t.card(e.card)}蓋在${t.card(e.over)}上，付了 ${e.n} 張牌。`

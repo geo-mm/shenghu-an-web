@@ -1,4 +1,4 @@
-import type { BuildingType, GoodType, RoleId } from '../game/cards'
+import type { BuildingType, RoleId, SoldGood } from '../game/cards'
 import type { PlacementError } from '../game/engine'
 import type { LogEvent } from '../game/state'
 
@@ -23,6 +23,7 @@ const en = {
   // Lobby
   hostTitle: 'Host a game',
   hostHint: 'Creates a room in this browser. Share the token with your opponent.',
+  expansionOption: 'Include the “New Buildings” expansion',
   hostButton: 'Host Game',
   joinTitle: 'Join a game',
   joinPlaceholder: 'Room token, e.g. K7PX2M',
@@ -67,6 +68,8 @@ const en = {
 
   inHand: (n: number) => `${s(n, 'card')} in hand`,
   underChapel: (n: number) => `${n} under chapel`,
+  stored: (chapel: number, bank: number, harbor: number) =>
+    [chapel && `${chapel} under chapel`, bank && `${bank} in bank`, harbor && `${harbor} under harbor`].filter(Boolean).join(' · '),
   buildingsCount: (n: number) => s(n, 'building'),
   youPlayer: (id: string) => `You (Player ${id})`,
   buildingsTitle: (n: number) => `Buildings (${n}/12)`,
@@ -81,6 +84,11 @@ const en = {
   chapelPrompt: 'You may tuck one card under your chapel (1 VP at the end). ',
   discardPrompt: (n: number) => (n > 0 ? `Select ${s(n, 'card')} to discard down to your hand limit.` : 'No discards needed.'),
   tuckLabel: 'Tuck under chapel:',
+  bankPrompt: 'Bank (once per game): you may deposit any number of hand cards, 1 VP each at the end. ',
+  assignLabel: 'Clicking a hand card:',
+  assignDiscard: 'discards it',
+  assignBank: 'puts it in the bank',
+  customsPrice: (n: number) => `customs office ${n}`,
   none: '— none —',
   buildPick: 'Click a card in your hand to build it.',
   buildPay: (card: string, cost: number, paid: number) => `Building ${card}: costs ${s(cost, 'card')}. Select payment cards (${paid}/${cost}).`,
@@ -100,13 +108,14 @@ const en = {
     maxBuildings: 'You already have 12 buildings.',
     violetUnique: 'You already own this violet building; violet buildings are unique.',
   } satisfies Record<PlacementError, string>,
-  tags: { build: 'build', pay: 'pay', discard: 'discard', chapel: 'chapel', produce: 'produce', sell: 'sell' },
+  tags: { build: 'build', pay: 'pay', discard: 'discard', chapel: 'chapel', bank: 'bank', produce: 'produce', sell: 'sell' },
   good: 'good',
 
   gameLog: 'Game log',
   youWin: '🏆 You win!',
   winner: (names: string) => `Winner: ${names}`,
-  scoreCols: ['Player', 'Buildings', 'Chapel', 'Bonus', 'Palace', 'Total', 'Tie-break'],
+  scoreCols: ['Player', 'Buildings', 'Stored cards', 'Bonus', 'Palace', 'Total', 'Tie-break'],
+  storedTitle: 'Cards under the chapel, in the bank and under the harbor',
   tiebreakTitle: 'Cards in hand + goods',
 
   // Card details
@@ -118,7 +127,7 @@ const en = {
   kind: { production: 'Production building', violet: 'Violet building', monument: 'Monument' },
   produces: 'Produces',
 
-  goods: { indigo: 'indigo', sugar: 'sugar', tobacco: 'tobacco', coffee: 'coffee', silver: 'silver' } satisfies Record<GoodType, string>,
+  goods: { indigo: 'indigo', sugar: 'sugar', tobacco: 'tobacco', coffee: 'coffee', silver: 'silver', customs: 'customs good' } satisfies Record<SoldGood, string>,
   roles: {
     builder: { name: 'Builder', action: 'Everyone may build 1 building.', privilege: 'Pays 1 card less.' },
     producer: { name: 'Producer', action: 'Everyone may produce 1 good.', privilege: 'Produces 1 extra good.' },
@@ -157,9 +166,19 @@ const en = {
     city_hall: ['City hall', 'Game end: 1 VP per violet building (including this one).'],
     triumphal_arch: ['Triumphal arch', 'Game end: 4 / 6 / 8 VP for 1 / 2 / 3 monuments.'],
     palace: ['Palace', 'Game end: +1 VP per 4 VP you have (rounded down).'],
+    guard_room: ['Guard room', 'Start of round: while you own this, every player without a guard room may keep only 6 cards (tower owners still keep 12).'],
+    hut: ['Hut', 'Trader: if the whole phase passes without anyone selling a good, draw 1 card.'],
+    tavern: ['Tavern', 'Builder: when the phase ends, draw 1 card if nobody has fewer buildings than you.'],
+    bank: ['Bank', 'Once per game, at the start of a round: stash as many hand cards as you like in the bank; each is worth 1 VP at the end.'],
+    customs_office: ['Customs office', 'Councillor: an empty customs office receives 1 good. Trader: selling that good always earns 2 cards.'],
+    park: ['Park', 'Builder: rebuilding over the park with a crane makes the new building 6 cards cheaper (never below 0).'],
+    harbor: ['Harbor', 'Trader: one of the goods you sell is kept face down under the harbor and scores 1 VP at the end.'],
+    goldsmith: ['Goldsmith', 'Prospector: turn up 1 card; take it if no player has that building in play yet, otherwise discard it.'],
+    residence: ['Residence', 'Game end: every 3 different buildings sharing a cost form a set; 1 / 2 / 3 / 4+ sets give 4 / 7 / 9 / 10 VP.'],
+    cathedral: ['Cathedral', 'Game end: 4 / 7 / 9 / 10 VP when your opponents own 1 / 2 / 3 / 4+ cost-6 buildings between them.'],
   } satisfies Record<BuildingType, [string, string]>,
 
-  log: (e: LogEvent, t: { card: (b: BuildingType) => string; good: (g: GoodType) => string; who: (p: string) => string; role: (r: RoleId) => string }): string => {
+  log: (e: LogEvent, t: { card: (b: BuildingType) => string; good: (g: SoldGood) => string; who: (p: string) => string; role: (r: RoleId) => string }): string => {
     const list = (xs: string[]) => xs.join(', ')
     switch (e.key) {
       case 'roundStart': return `New round — governor: ${t.who(e.governor)}.`
@@ -171,6 +190,13 @@ const en = {
       case 'poorHouseDraw': return 'draws 1 card (poor house).'
       case 'carpenterDraw': return 'draws 1 card (carpenter).'
       case 'wellDraw': return 'draws 1 card (well).'
+      case 'tavernDraw': return 'draws 1 card (tavern).'
+      case 'hutDraw': return 'draws 1 card (hut).'
+      case 'customsGood': return 'places a good on the customs office.'
+      case 'harborStore': return 'keeps a sold good under the harbor.'
+      case 'bankDeposit': return `deposits ${s(e.n, 'card')} in the bank.`
+      case 'goldsmithKeep': return `turns up a ${t.card(e.card)} with the goldsmith and keeps it.`
+      case 'goldsmithMiss': return `turns up a ${t.card(e.card)} with the goldsmith, but it is already built.`
       case 'councilKeptAll': return `drew and kept ${s(e.n, 'card')}.`
       case 'prospect': return `prospects and draws ${s(e.n, 'card')}.`
       case 'handLimitDiscard': return `discards ${s(e.n, 'card')} down to the hand limit.`
@@ -199,6 +225,7 @@ const zhTW: Messages = {
 
   hostTitle: '建立遊戲',
   hostHint: '在這個瀏覽器開一個房間，把代碼分享給對手。',
+  expansionOption: '加入「新建築」擴充',
   hostButton: '建立遊戲',
   joinTitle: '加入遊戲',
   joinPlaceholder: '房間代碼，例如 K7PX2M',
@@ -241,6 +268,8 @@ const zhTW: Messages = {
 
   inHand: (n) => `手牌 ${n} 張`,
   underChapel: (n) => `禮拜堂下 ${n} 張`,
+  stored: (chapel, bank, harbor) =>
+    [chapel && `禮拜堂下 ${chapel} 張`, bank && `銀行 ${bank} 張`, harbor && `港口下 ${harbor} 張`].filter(Boolean).join(' · '),
   buildingsCount: (n) => `建築 ${n} 棟`,
   youPlayer: (id) => `你（玩家 ${id}）`,
   buildingsTitle: (n) => `建築（${n}/12）`,
@@ -255,6 +284,11 @@ const zhTW: Messages = {
   chapelPrompt: '你可以將 1 張手牌蓋在禮拜堂下（遊戲結束時 1 分）。',
   discardPrompt: (n) => (n > 0 ? `請選擇 ${n} 張牌棄掉，讓手牌符合上限。` : '不需要棄牌。'),
   tuckLabel: '蓋在禮拜堂下：',
+  bankPrompt: '銀行（整場限一次）：可以把任意張手牌存進銀行，終局每張 1 分。',
+  assignLabel: '點手牌時：',
+  assignDiscard: '棄掉',
+  assignBank: '存進銀行',
+  customsPrice: (n) => `海關 ${n}`,
   none: '— 不蓋 —',
   buildPick: '點選一張手牌來建造。',
   buildPay: (card, cost, paid) => `建造${card}：需要 ${cost} 張牌，請選擇付款的手牌（${paid}/${cost}）。`,
@@ -273,13 +307,14 @@ const zhTW: Messages = {
     maxBuildings: '你已經有 12 棟建築。',
     violetUnique: '你已經有這棟紫色建築了；每種紫色建築只能有一棟。',
   },
-  tags: { build: '建造', pay: '付款', discard: '棄掉', chapel: '禮拜堂', produce: '生產', sell: '販賣' },
+  tags: { build: '建造', pay: '付款', discard: '棄掉', chapel: '禮拜堂', bank: '銀行', produce: '生產', sell: '販賣' },
   good: '貨物',
 
   gameLog: '遊戲紀錄',
   youWin: '🏆 你贏了！',
   winner: (names) => `勝利者：${names}`,
-  scoreCols: ['玩家', '建築', '禮拜堂', '加分', '宮殿', '總分', '平手判定'],
+  scoreCols: ['玩家', '建築', '存放的牌', '加分', '宮殿', '總分', '平手判定'],
+  storedTitle: '禮拜堂下、銀行裡和港口下的牌',
   tiebreakTitle: '手牌數 + 貨物數',
 
   close: '關閉',
@@ -290,13 +325,13 @@ const zhTW: Messages = {
   kind: { production: '生產建築', violet: '紫色建築', monument: '紀念碑' },
   produces: '生產',
 
-  goods: { indigo: '染料', sugar: '糖', tobacco: '菸草', coffee: '咖啡', silver: '銀' },
+  goods: { indigo: '染料', sugar: '糖', tobacco: '菸草', coffee: '咖啡', silver: '銀', customs: '海關貨物' },
   roles: {
     builder: { name: '建築師', action: '每位玩家可以建造 1 棟建築。', privilege: '建造時少付 1 張牌。' },
     producer: { name: '生產者', action: '每位玩家可以生產 1 個貨物。', privilege: '多生產 1 個貨物。' },
     trader: { name: '商人', action: '每位玩家可以賣出 1 個貨物。', privilege: '多賣 1 個貨物。' },
     councillor: { name: '議員', action: '每位玩家抽 2 張牌，保留 1 張。', privilege: '改抽 5 張牌。' },
-    prospector: { name: '淘金者', action: '其他玩家沒有行動。', privilege: '抽 1 張牌。' },
+    prospector: { name: '礦工', action: '其他玩家沒有行動。', privilege: '抽 1 張牌。' },
   },
 
   cards: {
@@ -315,7 +350,7 @@ const zhTW: Messages = {
     market_stand: ['攤販', '商人階段：若賣出 2 個以上貨物，抽 1 張牌。'],
     crane: ['起重機', '建築階段：可以把新建築蓋在自己的舊建築上，只需支付差額。'],
     chapel: ['禮拜堂', '總督階段：可將 1 張手牌蓋在禮拜堂下，遊戲結束時每張 1 分。'],
-    tower: ['塔樓', '總督階段：手牌上限從 7 張提高為 12 張。'],
+    tower: ['高塔', '總督階段：手牌上限從 7 張提高為 12 張。'],
     aqueduct: ['水道橋', '生產階段：可以多生產 1 個貨物。'],
     carpenter: ['木工場', '建築階段：蓋完紫色建築後，抽 1 張牌。'],
     prefecture: ['省政府', '議員階段：多保留 1 張牌。'],
@@ -329,6 +364,16 @@ const zhTW: Messages = {
     city_hall: ['市政廳', '遊戲結束：每棟紫色建築得 1 分（包含本建築）。'],
     triumphal_arch: ['凱旋門', '遊戲結束：擁有 1／2／3 座紀念碑時，得 4／6／8 分。'],
     palace: ['宮殿', '遊戲結束：總分每 4 分額外加 1 分（無條件捨去）。'],
+    guard_room: ['警衛室', '每回合開始：只要你有這棟建築，沒有警衛室的其他玩家手牌最多只能留 6 張（有高塔的人仍可留 12 張）。'],
+    hut: ['茅屋', '交易階段：如果整個階段都沒有人賣出貨物，你補 1 張牌。'],
+    tavern: ['酒館', '建築階段：階段結束時，若沒有人的建築比你少，你補 1 張牌。'],
+    bank: ['銀行', '整場遊戲限用一次：在某回合開始時，把想要的張數手牌存進銀行，終局每張算 1 分。'],
+    customs_office: ['海關', '議員階段：海關若是空的，就在上面放 1 個貨物。交易階段：賣掉這個貨物固定換 2 張牌。'],
+    park: ['公園', '建築階段：用起重機把公園改建成別的建築時，新建築便宜 6 張牌（最低 0）。'],
+    harbor: ['港口', '交易階段：賣出的貨物中，留 1 張面朝下收在港口下，終局算 1 分。'],
+    goldsmith: ['金工坊', '礦工階段：翻開 1 張牌，若場上還沒有人蓋過這種建築就收進手牌，否則棄掉。'],
+    residence: ['官邸', '遊戲結束：同費用的 3 種不同建築湊成一組；1／2／3／4 組以上分別加 4／7／9／10 分。'],
+    cathedral: ['大教堂', '遊戲結束：對手們合計擁有 1／2／3／4 棟以上的 6 元建築時，你分別得到 4／7／9／10 分。'],
   },
 
   log: (e, t) => {
@@ -343,6 +388,13 @@ const zhTW: Messages = {
       case 'poorHouseDraw': return '抽 1 張牌（救濟院）。'
       case 'carpenterDraw': return '抽 1 張牌（木工場）。'
       case 'wellDraw': return '抽 1 張牌（水井）。'
+      case 'tavernDraw': return '抽 1 張牌（酒館）。'
+      case 'hutDraw': return '抽 1 張牌（茅屋）。'
+      case 'customsGood': return '在海關放上 1 個貨物。'
+      case 'harborStore': return '把 1 個賣出的貨物收進港口。'
+      case 'bankDeposit': return `把 ${e.n} 張牌存進銀行。`
+      case 'goldsmithKeep': return `用金工坊翻到${t.card(e.card)}，收進手牌。`
+      case 'goldsmithMiss': return `用金工坊翻到${t.card(e.card)}，但已有人蓋過，棄掉。`
       case 'councilKeptAll': return `抽了 ${e.n} 張牌並全部保留。`
       case 'prospect': return `淘金，抽 ${e.n} 張牌。`
       case 'handLimitDiscard': return `棄掉 ${e.n} 張牌以符合手牌上限。`

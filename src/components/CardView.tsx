@@ -25,7 +25,7 @@ export function CardView({ id, selected, tag, hasGood, onClick, disabled }: Prop
   if (id === HIDDEN_CARD) return <div className="sj-card back" aria-label="Hidden card" />
   const def = cardDef(id)
   const [name, text] = t.cards[def.type]
-  const color = def.kind === 'production' ? def.good : def.monument ? 'monument' : def.cost === 6 ? 'six' : 'violet'
+  const color = def.kind === 'production' ? def.good : def.monument ? 'monument' : def.bonus ? 'six' : 'violet'
   const className = `sj-card c-${color} ${selected ? 'selected' : ''} ${onClick && !disabled ? 'clickable' : ''}`
 
   const handlers = {
@@ -55,7 +55,7 @@ export function CardView({ id, selected, tag, hasGood, onClick, disabled }: Prop
           {def.cost}
         </span>
         <span className="vp" title={t.vp}>
-          {def.cost === 6 ? '?' : def.vp}★
+          {def.bonus ? '?' : def.vp}★
         </span>
       </div>
       <div className="sj-card-name">{name}</div>

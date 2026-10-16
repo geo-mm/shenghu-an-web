@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { Client } from 'boardgame.io/client'
-import { BUILDINGS, CARD_LIST, DECK_SIZE, HIDDEN_CARD, cardType, type BuildingType, type CardId, type GoodType, type RoleId } from './cards'
+import { BASE_DECK_SIZE, BUILDINGS, CARD_LIST, HIDDEN_CARD, cardType, deckCards, type BuildingType, type RoleId, type SoldGood } from './cards'
 import { MESSAGES } from '../i18n/messages'
 import {
   actBuild,
@@ -14,42 +14,26 @@ import {
   countAllCards,
   createInitialState,
   scorePlayer,
-  type EngineCtx,
-  type Rng,
 } from './engine'
 import { legalActions } from './bot'
-import { SanJuanGame } from './SanJuanGame'
-import type { PlayerState, SanJuanState } from './state'
-
-const identity: Rng = { Shuffle: (a) => [...a] }
-const ctx2: EngineCtx = { numPlayers: 2, playOrder: ['0', '1'] }
-
-/** Takes `n` cards of a building type out of the deck or players' hands, so the card count stays at 110. */
-function cardsOf(G: SanJuanState, type: BuildingType, n = 1): CardId[] {
-  const piles = [G.deck, ...Object.values(G.players).map((p) => p.hand)]
-  const out: CardId[] = []
-  for (const pile of piles) {
-    for (const id of pile.filter((c) => cardType(c) === type)) {
-      if (out.length === n) break
-      pile.splice(pile.indexOf(id), 1)
-      out.push(id)
-    }
-  }
-  if (out.length < n) throw new Error(`not enough ${type} cards`)
-  return out
-}
-
-function give(G: SanJuanState, p: string, type: BuildingType) {
-  const [card] = cardsOf(G, type)
-  G.players[p].buildings.push({ card, good: null })
-}
+import { SanJuanGame, createSanJuanGame } from './SanJuanGame'
+import { cardsOf, ctx2, give, identity } from './testUtils'
 
 describe('card data', () => {
-  it('has the 110-card first-edition deck', () => {
-    expect(DECK_SIZE).toBe(110)
-    const production = CARD_LIST.filter((t) => BUILDINGS[t].kind === 'production').length
+  it('has the 110-card base deck', () => {
+    expect(BASE_DECK_SIZE).toBe(110)
+    const base = CARD_LIST.slice(0, BASE_DECK_SIZE)
+    const production = base.filter((t) => BUILDINGS[t].kind === 'production').length
     expect(production).toBe(42)
-    expect(DECK_SIZE - production).toBe(68)
+    expect(BASE_DECK_SIZE - production).toBe(68)
+    expect(BUILDINGS.prefecture.cost).toBe(4) // second edition
+  })
+
+  it('adds the expansion (without the office building, whose effect is unknown)', () => {
+    const extra = deckCards(true).slice(BASE_DECK_SIZE).map((id) => CARD_LIST[id])
+    expect(extra.filter((t) => BUILDINGS[t].kind === 'production')).toHaveLength(4)
+    expect(extra.filter((t) => BUILDINGS[t].kind === 'violet')).toHaveLength(27)
+    expect(extra).not.toContain('sugar_mill')
   })
 })
 
@@ -186,23 +170,26 @@ describe('governor phase', () => {
 describe('scoring', () => {
   it('scores bonuses and palace last', () => {
     const G = createInitialState(ctx2, identity)
-    const pl: PlayerState = G.players['0']
+    const pl = G.players['0']
     for (const t of ['guild_hall', 'city_hall', 'triumphal_arch', 'palace', 'statue', 'hero', 'sugar_mill'] as const)
       give(G, '0', t)
     pl.chapel = cardsOf(G, 'indigo_plant', 2)
-    const s = scorePlayer(pl, '0')
+    const s = scorePlayer(G, '0')
     // VP: indigo 1 + statue 3 + hero 5 + sugar 1 = 10; chapel 2
     // guild hall: 2 × 2 production = 4; city hall: 6 violet = 6; arch: 2 monuments = 6 → bonus 16
     // palace: floor(28 / 4) = 7
-    expect(s).toMatchObject({ buildings: 10, chapel: 2, bonus: 16, palace: 7, total: 35 })
+    expect(s).toMatchObject({ buildings: 10, stored: 2, bonus: 16, palace: 7, total: 35 })
   })
 })
 
 describe('full games through boardgame.io', () => {
+  for (const expansion of [false, true])
   for (const numPlayers of [2, 3, 4]) {
-    it(`plays random ${numPlayers}-player games to the end`, () => {
+    it(`plays random ${numPlayers}-player games to the end${expansion ? ' with the expansion' : ''}`, () => {
+      const game = createSanJuanGame({ expansion })
+      const totalCards = deckCards(expansion).length
       for (let seed = 1; seed <= 15; seed++) {
-        const client = Client({ game: { ...SanJuanGame, seed: `${numPlayers}-${seed}` }, numPlayers })
+        const client = Client({ game: { ...game, seed: `${expansion}-${numPlayers}-${seed}` }, numPlayers })
         client.start()
         let rng = seed * 7919
         const pick = <T,>(arr: T[]) => arr[(rng = (rng * 16807) % 2147483647) % arr.length]
@@ -211,7 +198,7 @@ describe('full games through boardgame.io', () => {
           const state = (client as unknown as { store: { getState(): ReturnType<typeof client.getState> } }).store.getState()!
           if (state.ctx.gameover) break
           const G = state.G
-          expect(countAllCards(G)).toBe(110)
+          expect(countAllCards(G)).toBe(totalCards)
           expect(state.ctx.currentPlayer).toBe(G.actor)
           const options = legalActions(G, state.ctx)
           expect(options.length).toBeGreaterThan(0)
@@ -228,7 +215,7 @@ describe('full games through boardgame.io', () => {
         // Every log entry renders in both languages.
         for (const lang of ['en', 'zh-TW'] as const) {
           const t = MESSAGES[lang]
-          const helpers = { card: (b: BuildingType) => t.cards[b][0], good: (g: GoodType) => t.goods[g], role: (r: RoleId) => t.roles[r].name, who: (p: string) => t.who(p, false) }
+          const helpers = { card: (b: BuildingType) => t.cards[b][0], good: (g: SoldGood) => t.goods[g], role: (r: RoleId) => t.roles[r].name, who: (p: string) => t.who(p, false) }
           for (const e of end.G.log) expect(t.log(e, helpers), `${lang} ${e.key}`).toMatch(/\S/)
         }
         expect(Object.values(end.G.players).some((p) => p.buildings.length >= 12)).toBe(true)

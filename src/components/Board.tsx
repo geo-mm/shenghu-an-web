@@ -1,7 +1,8 @@
 import { useState, type ReactNode } from 'react'
-import { GOODS, ROLES, cardDef, goodPrice, type BuildingType, type CardId, type GoodType, type RoleId } from '../game/cards'
+import { CUSTOMS_PRICE, GOODS, ROLES, cardDef, goodPrice, type BuildingType, type CardId, type RoleId, type SoldGood } from '../game/cards'
 import {
   buildCost,
+  canUseBank,
   councilDiscardCount,
   governorDiscardCount,
   maxGoodsPayment,
@@ -58,7 +59,7 @@ export function Board({ state, playerID, players, moves }: Props) {
               </h3>
               <p className="muted small">
                 {t.inHand(G.players[p].hand.length)}
-                {G.players[p].chapel.length > 0 && ` · ${t.underChapel(G.players[p].chapel.length)}`}
+                {storedText(t, G.players[p]) && ` · ${storedText(t, G.players[p])}`}
                 {' · '}
                 {t.buildingsCount(G.players[p].buildings.length)}
               </p>
@@ -80,6 +81,10 @@ export function Board({ state, playerID, players, moves }: Props) {
       </section>
     </CardInfoProvider>
   )
+}
+
+function storedText(t: Messages, pl: SanJuanState['players'][string]) {
+  return t.stored(pl.chapel.length, pl.bank.length, pl.harbor.length)
 }
 
 function StatusBar({ G, playerID }: { G: SanJuanState; playerID: PlayerID }) {
@@ -177,6 +182,8 @@ function MyArea({ G, ctx, playerID, moves }: MyAreaProps) {
   const [target, setTarget] = useState<CardId | null>(null)
   const [replace, setReplace] = useState<number | null>(null)
   const [tuck, setTuck] = useState<CardId | null>(null)
+  const [bankSel, setBankSel] = useState<CardId[]>([])
+  const [assignTo, setAssignTo] = useState<'discard' | 'bank'>('discard')
   const [pendSel, setPendSel] = useState<CardId[]>([])
 
   const toggle = <T,>(list: T[], x: T) => (list.includes(x) ? list.filter((y) => y !== x) : [...list, x])
@@ -193,7 +200,14 @@ function MyArea({ G, ctx, playerID, moves }: MyAreaProps) {
       } else setHandSel(toggle(handSel, c))
     } else if (mode === 'governor') {
       if (c === tuck) setTuck(null)
-      setHandSel(toggle(handSel, c))
+      // A card is either discarded or banked, never both.
+      if (assignTo === 'bank') {
+        setHandSel(handSel.filter((x) => x !== c))
+        setBankSel(toggle(bankSel, c))
+      } else {
+        setBankSel(bankSel.filter((x) => x !== c))
+        setHandSel(toggle(handSel, c))
+      }
     } else if (mode === 'councillor') setPendSel(toggle(pendSel, c))
   }
   const buildingClickable = (i: number) => {
@@ -207,20 +221,33 @@ function MyArea({ G, ctx, playerID, moves }: MyAreaProps) {
   let panel: ReactNode = null
   if (mode === 'governor') {
     const hasChapel = owns(me, 'chapel')
-    const need = governorDiscardCount(me, tuck !== null)
+    const hasBank = canUseBank(me)
+    const need = governorDiscardCount(G, me, tuck !== null, bankSel.length)
     panel = (
       <>
         <p>
           {hasChapel && t.chapelPrompt}
+          {hasBank && t.bankPrompt}
           {t.discardPrompt(need)}
         </p>
+        {hasBank && (
+          <div className="assign" role="radiogroup" aria-label={t.assignLabel}>
+            <span>{t.assignLabel}</span>
+            {(['discard', 'bank'] as const).map((a) => (
+              <label key={a}>
+                <input type="radio" name="assign" checked={assignTo === a} onChange={() => setAssignTo(a)} />{' '}
+                {a === 'discard' ? t.assignDiscard : t.assignBank}
+              </label>
+            ))}
+          </div>
+        )}
         {hasChapel && (
           <label>
             {t.tuckLabel}{' '}
             <select value={tuck ?? ''} onChange={(e) => setTuck(e.target.value === '' ? null : Number(e.target.value))}>
               <option value="">{t.none}</option>
               {me.hand
-                .filter((c) => !handSel.includes(c))
+                .filter((c) => !handSel.includes(c) && !bankSel.includes(c))
                 .map((c) => (
                   <option key={c} value={c}>
                     {cardName(c)}
@@ -230,7 +257,7 @@ function MyArea({ G, ctx, playerID, moves }: MyAreaProps) {
           </label>
         )}
         <div className="actions">
-          <button className="primary" disabled={handSel.length !== need} onClick={() => moves.governorAction(tuck, handSel)}>
+          <button className="primary" disabled={handSel.length !== need} onClick={() => moves.governorAction(tuck, handSel, bankSel)}>
             {t.confirm}
           </button>
         </div>
@@ -291,7 +318,7 @@ function MyArea({ G, ctx, playerID, moves }: MyAreaProps) {
     const max = maxSell(G, ctx, playerID)
     panel = (
       <>
-        <TradeTile tile={G.tradeTile!} t={t} />
+        <TradeTile tile={G.tradeTile!} t={t} customs={owns(me, 'customs_office')} />
         <p>{t.sellPrompt(max, bldSel.length)}</p>
         <div className="actions">
           <button className="primary" disabled={bldSel.length === 0 || bldSel.length > max} onClick={() => moves.sell(bldSel)}>
@@ -352,7 +379,8 @@ function MyArea({ G, ctx, playerID, moves }: MyAreaProps) {
 
   const handTag = (c: CardId) => {
     if (mode === 'builder') return c === target ? t.tags.build : handSel.includes(c) ? t.tags.pay : undefined
-    if (mode === 'governor') return handSel.includes(c) ? t.tags.discard : c === tuck ? t.tags.chapel : undefined
+    if (mode === 'governor')
+      return handSel.includes(c) ? t.tags.discard : bankSel.includes(c) ? t.tags.bank : c === tuck ? t.tags.chapel : undefined
     if (mode === 'councillor') return pendSel.includes(c) ? t.tags.discard : undefined
   }
   const buildingTag = mode === 'producer' ? t.tags.produce : mode === 'trader' ? t.tags.sell : t.tags.pay
@@ -361,7 +389,7 @@ function MyArea({ G, ctx, playerID, moves }: MyAreaProps) {
     <div className={`panel area mine-area ${G.actor === playerID ? 'my-turn' : ''}`} data-testid={`area-${playerID}`}>
       <h3>
         {t.youPlayer(playerID)} {G.governor === playerID && <span className="tag">{t.governorTag}</span>}
-        {me.chapel.length > 0 && <span className="muted small"> · {t.underChapel(me.chapel.length)}</span>}
+        {storedText(t, me) && <span className="muted small"> · {storedText(t, me)}</span>}
       </h3>
       {panel && <div className="action-panel">{panel}</div>}
 
@@ -385,7 +413,7 @@ function MyArea({ G, ctx, playerID, moves }: MyAreaProps) {
           <CardView
             key={c}
             id={c}
-            selected={handSel.includes(c) || c === target || (mode === 'councillor' && pendSel.includes(c))}
+            selected={handSel.includes(c) || bankSel.includes(c) || c === target || (mode === 'councillor' && pendSel.includes(c))}
             tag={handTag(c)}
             onClick={handClickable ? () => onHandClick(c) : undefined}
           />
@@ -396,7 +424,7 @@ function MyArea({ G, ctx, playerID, moves }: MyAreaProps) {
   )
 }
 
-function TradeTile({ tile, t }: { tile: number; t: Messages }) {
+function TradeTile({ tile, t, customs }: { tile: number; t: Messages; customs?: boolean }) {
   return (
     <div className="trade-tile" title={t.tradeTile}>
       {GOODS.map((g) => (
@@ -404,6 +432,7 @@ function TradeTile({ tile, t }: { tile: number; t: Messages }) {
           {t.goods[g]} {goodPrice(tile, g)}
         </span>
       ))}
+      {customs && <span className="price c-violet">{t.customsPrice(CUSTOMS_PRICE)}</span>}
     </div>
   )
 }
@@ -413,7 +442,7 @@ function Log({ G, playerID }: { G: SanJuanState; playerID: PlayerID }) {
   const who = useWho(playerID)
   const helpers = {
     card: (b: BuildingType) => t.cards[b][0],
-    good: (g: GoodType) => t.goods[g],
+    good: (g: SoldGood) => t.goods[g],
     role: (r: RoleId) => t.roles[r].name,
     who,
   }
@@ -444,7 +473,7 @@ function ScoreTable({ G, playerID }: { G: SanJuanState; playerID: PlayerID }) {
           <thead>
             <tr>
               {t.scoreCols.map((c, i) => (
-                <th key={c} title={i === 6 ? t.tiebreakTitle : undefined}>
+                <th key={c} title={i === 6 ? t.tiebreakTitle : i === 2 ? t.storedTitle : undefined}>
                   {c}
                 </th>
               ))}
@@ -455,7 +484,7 @@ function ScoreTable({ G, playerID }: { G: SanJuanState; playerID: PlayerID }) {
               <tr key={s.player} className={G.winners?.includes(s.player) ? 'winner' : ''}>
                 <td>{who(s.player)}</td>
                 <td>{s.buildings}</td>
-                <td>{s.chapel}</td>
+                <td>{s.stored}</td>
                 <td>{s.bonus}</td>
                 <td>{s.palace}</td>
                 <td>

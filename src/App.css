@@ -107,3 +107,5 @@ select { font: inherit; padding: 4px 8px; border-radius: 6px; border: 1px solid 
 @media (max-width: 480px) {
   .app-header h1 { font-size: 1.3rem; }
 }
+.assign { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+.expansion-option { display: flex; gap: 6px; align-items: center; margin-top: 10px; }

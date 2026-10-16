@@ -30,7 +30,7 @@ function CardInfoDialog({ id, onClose }: { id: CardId; onClose: () => void }) {
   // Show the name in the other language too, to help players who know the game in another language.
   const otherName = MESSAGES[lang === 'en' ? 'zh-TW' : 'en'].cards[def.type][0]
   const kind = def.kind === 'production' ? 'production' : def.monument ? 'monument' : 'violet'
-  const color = def.kind === 'production' ? def.good : def.monument ? 'monument' : def.cost === 6 ? 'six' : 'violet'
+  const color = def.kind === 'production' ? def.good : def.monument ? 'monument' : def.bonus ? 'six' : 'violet'
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
@@ -57,7 +57,7 @@ function CardInfoDialog({ id, onClose }: { id: CardId; onClose: () => void }) {
           <dt>{t.cost}</dt>
           <dd>{def.cost}</dd>
           <dt>{t.vp}</dt>
-          <dd>{def.cost === 6 ? t.vpVariable : def.vp}</dd>
+          <dd>{def.bonus ? t.vpVariable : def.vp}</dd>
           {def.good && (
             <>
               <dt>{t.produces}</dt>
@@ -65,7 +65,10 @@ function CardInfoDialog({ id, onClose }: { id: CardId; onClose: () => void }) {
             </>
           )}
           <dt>{t.copies}</dt>
-          <dd>{BUILDINGS[def.type].count}</dd>
+          <dd>
+            {BUILDINGS[def.type].count}
+            {BUILDINGS[def.type].expansion ? ` (+${BUILDINGS[def.type].expansion})` : ''}
+          </dd>
         </dl>
         <button className="primary" onClick={onClose} autoFocus>
           {t.close}

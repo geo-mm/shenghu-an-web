@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Client } from 'boardgame.io/client'
 import { P2P } from '@boardgame.io/p2p'
-import { SanJuanGame } from '../game/SanJuanGame'
+import { createSanJuanGame } from '../game/SanJuanGame'
 import type { SanJuanState } from '../game/state'
 
 export const HOST_PLAYER_ID = '0'
@@ -11,6 +11,8 @@ export interface MatchConfig {
   role: 'host' | 'guest'
   /** The room token. Used as the boardgame.io matchID, which the P2P transport turns into the host's peer ID. */
   token: string
+  /** Host only: play with the "New Buildings" expansion. */
+  expansion?: boolean
 }
 
 type SanJuanClient = ReturnType<typeof Client<SanJuanState>>
@@ -61,7 +63,8 @@ export function useP2PMatch(config: MatchConfig | null): P2PMatch {
 
     const isHost = config.role === 'host'
     const client = Client<SanJuanState>({
-      game: SanJuanGame,
+      // Only the host runs setup, so only its options matter.
+      game: createSanJuanGame({ expansion: isHost && config.expansion }),
       numPlayers: 2,
       matchID: config.token,
       playerID: isHost ? HOST_PLAYER_ID : GUEST_PLAYER_ID,

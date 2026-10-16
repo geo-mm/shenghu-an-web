@@ -40,12 +40,12 @@ show the same hands, turn number and state ID.
 
 | File | Purpose |
 | --- | --- |
-| `src/game/cards.ts` | Card data: all 29 buildings (110 cards) with cost, VP, count, effect text and Chinese names; roles; trading house tiles. |
+| `src/game/cards.ts` | Card data: 29 base buildings (110 cards) and the expansion's buildings, with cost, VP and counts; roles; trading house tiles. |
 | `src/game/state.ts` | Game state types (`SanJuanState`, players, step machine, scores). |
 | `src/game/engine.ts` | The rules: pure functions for every decision (`act*`), automatic flow (`advance`), costs/limits and scoring. |
 | `src/game/SanJuanGame.ts` | boardgame.io wrapper: moves (host-only, `client: false`), turn order follows `G.actor`, `playerView` hides secret cards. |
 | `src/game/bot.ts` | Lists legal actions; used by tests to play full random games (and a future AI). |
-| `src/game/engine.test.ts` | Unit tests plus 45 complete random 2–4 player games (`npm test`). |
+| `src/game/engine.test.ts`, `expansion.test.ts` | Unit tests for every rule and building, plus 90 complete random 2–4 player games with and without the expansion (`npm test`). |
 | `src/hooks/useP2PMatch.ts` | Creates the boardgame.io client with `P2P({ isHost })`, exposes state, player list and connection status. |
 | `src/components/Lobby.tsx`, `ConnectionStatus.tsx` | Host / join UI and live connection status. |
 | `src/components/Board.tsx`, `CardView.tsx` | Playable board: roles, buildings, hand and per-phase controls, log, final scores. |
@@ -56,33 +56,40 @@ The room token is the boardgame.io `matchID`; the P2P transport derives the host
 from it, so the guest can find the host with just the token. The host is player `0`, the guest
 player `1`. The lobby currently seats 2 players; the rules engine supports 2–4.
 
-## Rules implemented (San Juan, first edition base game)
+## Rules implemented (San Juan, second edition)
 
 - **Setup:** each player gets an indigo plant in play and 4 cards; random governor.
-- **Round:** governor phase (chapel tuck, hand limit 7 / 12 with tower) → each player picks one
-  role in turn (2 players: governor, opponent, governor again) → everyone resolves it clockwise
-  from the chooser, who gets the privilege. The governor then passes left.
+- **Round:** governor phase (chapel, bank, hand limit) → each player picks one role in turn
+  (2 players: governor, opponent, governor again) → everyone resolves it clockwise from the
+  chooser, who gets the privilege. The governor then passes left.
 - **Roles:** Builder (−1 card), Producer (+1 good), Trader (+1 good, trading house tile cycles
   top → bottom), Councillor (draw 5 instead of 2, keep 1), Prospector (draw 1).
-- **All 22 violet buildings** with their effects, violet buildings unique per player, library
-  doubles privileges (2 players: governor only once per round).
+- **Base game:** all 110 cards; violet buildings are unique per player; library doubles
+  privileges (2 players: governor only once per round). Second-edition change applied:
+  prefecture costs 4.
+- **“New Buildings” expansion (optional, chosen by the host):** guard room, hut, tavern, bank,
+  customs office, park, harbor, goldsmith, residence, cathedral, plus 4 extra production
+  buildings. The office building is not included yet (its effect is still to be confirmed).
 - **End:** after a builder phase in which someone reaches 12 buildings. Score = building VP +
-  chapel cards + guild hall / city hall / triumphal arch bonuses, then palace (+¼). Tie-break:
-  cards in hand + goods.
-- **Hidden information:** clients never receive the deck, the discard pile, goods or other
-  players' hands; all moves are executed only on the host.
+  cards under the chapel / in the bank / under the harbor + guild hall, city hall, triumphal
+  arch, residence and cathedral bonuses, then palace (+¼). Tie-break: cards in hand + goods.
+- **Hidden information:** clients never receive the deck, the discard pile, goods, banked cards
+  or other players' hands; all moves are executed only on the host.
 
-### Assumptions to double-check against the printed rulebook
-
-The official PDF could not be downloaded from the development environment, so these points come
-from rule summaries and should be verified:
+### Interpretations to double-check
 
 1. Trading house tile prices (`TRADE_TILES` in `cards.ts`).
-2. A building's ability works only from the action *after* it is built (e.g. a newly built
-   poor house or carpenter does not trigger on its own construction).
+2. A building's ability works only from the action *after* it is built.
 3. Goods of the same type may be sold together.
-4. Guild hall = 2 VP per production building (first edition; the 2nd edition differs).
+4. Guild hall = 2 VP per production building (first-edition wording; the 2nd edition may differ).
 5. Gold mine needs 4 revealed cards with 4 different costs; its card pick is mandatory.
+6. Tavern: ties for the fewest buildings count as “fewest”.
+7. Cathedral counts the cost-6 buildings of all opponents together.
+8. Residence: a set is 3 different building types with the same cost; each building is used once.
+9. Customs office receives a good on its owner's councillor turn only if it is empty; the
+   customs good also counts as a good for the black market, market stand and tie-break.
+10. Harbor: one sold good is always kept (automatic). Goldsmith: the turned-up card is discarded
+    if any player, including you, already has that building.
 
 ## Signaling
 

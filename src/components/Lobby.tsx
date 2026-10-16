@@ -23,6 +23,7 @@ interface Props {
 export function Lobby({ onStart, initialJoinToken = '' }: Props) {
   const { t } = useI18n()
   const [joinToken, setJoinToken] = useState(initialJoinToken)
+  const [expansion, setExpansion] = useState(false)
   const token = normalizeToken(joinToken)
 
   const join = (e: FormEvent) => {
@@ -38,10 +39,19 @@ export function Lobby({ onStart, initialJoinToken = '' }: Props) {
         <button
           className="primary"
           data-testid="host-btn"
-          onClick={() => onStart({ role: 'host', token: generateToken() })}
+          onClick={() => onStart({ role: 'host', token: generateToken(), expansion })}
         >
           {t.hostButton}
         </button>
+        <label className="expansion-option">
+          <input
+            type="checkbox"
+            data-testid="expansion-option"
+            checked={expansion}
+            onChange={(e) => setExpansion(e.target.checked)}
+          />
+          {t.expansionOption}
+        </label>
       </section>
 
       <section className="panel">

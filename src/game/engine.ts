@@ -8,19 +8,23 @@
  */
 import {
   BUILDINGS_TO_END,
-  CARD_LIST,
+  CUSTOMS_PRICE,
+  GUARD_ROOM_HAND_LIMIT,
   HAND_LIMIT,
+  PARK_DISCOUNT,
+  SET_BONUS,
   ROLES,
   STARTING_HAND,
   TOWER_HAND_LIMIT,
   TRADE_TILES,
   cardDef,
   cardType,
+  deckCards,
   goodPrice,
   type BuildingType,
   type CardId,
-  type GoodType,
   type RoleId,
+  type SoldGood,
 } from './cards'
 import type { LogEvent, PlayerID, PlayerState, SanJuanState, Score } from './state'
 
@@ -52,8 +56,11 @@ export function nextPlayer(ctx: EngineCtx, p: PlayerID): PlayerID {
   return orderFrom(ctx, p)[1 % ctx.numPlayers]
 }
 
-export function handLimit(player: PlayerState): number {
-  return owns(player, 'tower') ? TOWER_HAND_LIMIT : HAND_LIMIT
+/** Tower: 12. Otherwise 7, or 6 for players without a guard room while anyone owns one. */
+export function handLimit(G: SanJuanState, player: PlayerState): number {
+  if (owns(player, 'tower')) return TOWER_HAND_LIMIT
+  const guardRoomInPlay = Object.values(G.players).some((pl) => owns(pl, 'guard_room'))
+  return guardRoomInPlay && !owns(player, 'guard_room') ? GUARD_ROOM_HAND_LIMIT : HAND_LIMIT
 }
 
 export function goodsCount(player: PlayerState): number {
@@ -92,7 +99,10 @@ export function buildCost(G: SanJuanState, ctx: EngineCtx, p: PlayerID, card: Ca
   let discount = privilege(G, ctx, p)
   if (def.kind === 'production' && owns(player, 'smithy')) discount += 1
   if (def.kind === 'violet' && owns(player, 'quarry')) discount += 1
-  if (replace !== null) discount += cardDef(player.buildings[replace].card).cost
+  if (replace !== null) {
+    const old = cardDef(player.buildings[replace].card)
+    discount += old.type === 'park' ? PARK_DISCOUNT : old.cost
+  }
   return Math.max(0, def.cost - discount)
 }
 
@@ -160,13 +170,24 @@ export function councilDiscardCount(player: PlayerState): number {
   return Math.max(0, player.pending.length - councilKeeps(player))
 }
 
-/** Cards `p` must discard in the governor phase, given whether they tuck one under the chapel. */
-export function governorDiscardCount(player: PlayerState, tucking: boolean): number {
-  return Math.max(0, player.hand.length - (tucking ? 1 : 0) - handLimit(player))
+export function canUseBank(player: PlayerState): boolean {
+  return owns(player, 'bank') && !player.bankUsed
 }
 
-function needsGovernorDecision(player: PlayerState): boolean {
-  return (owns(player, 'chapel') && player.hand.length > 0) || player.hand.length > handLimit(player)
+/** Cards `p` must discard in the governor phase after tucking (chapel) and depositing (bank) some. */
+export function governorDiscardCount(G: SanJuanState, player: PlayerState, tucking: boolean, banking = 0): number {
+  return Math.max(0, player.hand.length - (tucking ? 1 : 0) - banking - handLimit(G, player))
+}
+
+function needsGovernorDecision(G: SanJuanState, player: PlayerState): boolean {
+  const optional = (owns(player, 'chapel') || canUseBank(player)) && player.hand.length > 0
+  return optional || player.hand.length > handLimit(G, player)
+}
+
+/** Price of the good on building `b` with the current trading house tile. */
+export function sellPrice(G: SanJuanState, cardOnBuilding: CardId): number {
+  const def = cardDef(cardOnBuilding)
+  return def.type === 'customs_office' ? CUSTOMS_PRICE : goodPrice(G.tradeTile!, def.good!)
 }
 
 // ---------------------------------------------------------------------------
@@ -218,20 +239,28 @@ const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
 // Setup
 // ---------------------------------------------------------------------------
 
-export function createInitialState(ctx: EngineCtx, rng: Rng): SanJuanState {
-  const deck = rng.Shuffle(CARD_LIST.map((_, id) => id))
+export interface GameOptions {
+  /** Add the "New Buildings" expansion cards. */
+  expansion?: boolean
+}
+
+export function createInitialState(ctx: EngineCtx, rng: Rng, options: GameOptions = {}): SanJuanState {
+  const expansion = options.expansion ?? false
+  const deck = rng.Shuffle(deckCards(expansion))
   const players: Record<PlayerID, PlayerState> = {}
   for (const p of ctx.playOrder) {
     // Each player starts with an indigo plant in play…
     const indigo = deck.findIndex((id) => cardType(id) === 'indigo_plant')
     const [card] = deck.splice(indigo, 1)
-    players[p] = { hand: [], buildings: [{ card, good: null }], chapel: [], pending: [] }
+    players[p] = { hand: [], buildings: [{ card, good: null }], chapel: [], bank: [], bankUsed: false, harbor: [], pending: [] }
   }
   // …and 4 cards in hand.
   for (const p of ctx.playOrder) players[p].hand = deck.splice(deck.length - STARTING_HAND, STARTING_HAND)
 
   const governor = rng.Shuffle([...ctx.playOrder])[0]
   const G: SanJuanState = {
+    expansion,
+    soldThisPhase: 0,
     deck,
     discard: [],
     players,
@@ -274,7 +303,7 @@ export function advance(G: SanJuanState, ctx: EngineCtx, rng: Rng): void {
     if (step.kind === 'gameOver') return
 
     if (step.kind === 'governor') {
-      while (step.queue.length > 0 && !needsGovernorDecision(G.players[step.queue[0]])) step.queue.shift()
+      while (step.queue.length > 0 && !needsGovernorDecision(G, G.players[step.queue[0]])) step.queue.shift()
       if (step.queue.length > 0) {
         G.actor = step.queue[0]
         return
@@ -296,7 +325,7 @@ export function advance(G: SanJuanState, ctx: EngineCtx, rng: Rng): void {
       }
       step.queue.shift()
     }
-    finishRole(G, ctx)
+    finishRole(G, ctx, rng)
   }
 }
 
@@ -318,6 +347,12 @@ function startRoleTurn(G: SanJuanState, ctx: EngineCtx, rng: Rng, p: PlayerID): 
       log(G, { key: 'noGoods' }, p)
       return false
     case 'councillor': {
+      // Customs office: put a good on it (if it's empty) before drawing.
+      const customs = player.buildings.find((b) => cardType(b.card) === 'customs_office')
+      if (customs && customs.good === null) {
+        customs.good = drawOne(G, rng)
+        if (customs.good !== null) log(G, { key: 'customsGood' }, p)
+      }
       const n = councilDraws(G, ctx, p)
       if (p === chooser) markLibraryUse(G, ctx, p, privilegeFactor(G, ctx, p))
       player.pending = drawCards(G, rng, n)
@@ -335,6 +370,16 @@ function startRoleTurn(G: SanJuanState, ctx: EngineCtx, rng: Rng, p: PlayerID): 
         const n = drawToHand(G, rng, p, factor)
         log(G, { key: 'prospect', n }, p)
       }
+      if (owns(player, 'goldsmith')) {
+        // Keep the card only if nobody has built that building yet.
+        const card = drawOne(G, rng)
+        if (card !== null) {
+          const built = Object.values(G.players).some((pl) => owns(pl, cardType(card)))
+          if (built) G.discard.push(card)
+          else player.hand.push(card)
+          log(G, { key: built ? 'goldsmithMiss' : 'goldsmithKeep', card: cardType(card) }, p)
+        }
+      }
       if (!owns(player, 'gold_mine')) return false
       const cards = drawCards(G, rng, 4)
       const costs = new Set(cards.map((c) => cardDef(c).cost))
@@ -350,12 +395,27 @@ function startRoleTurn(G: SanJuanState, ctx: EngineCtx, rng: Rng, p: PlayerID): 
   }
 }
 
-function finishRole(G: SanJuanState, ctx: EngineCtx) {
-  const { role } = currentRole(G)!
-  if (role === 'trader' && G.tradeTile !== null) {
-    // The used tile goes face down to the bottom of the stack.
-    G.tradeTiles.push(G.tradeTiles.shift()!)
-    G.tradeTile = null
+function finishRole(G: SanJuanState, ctx: EngineCtx, rng: Rng) {
+  const { role, chooser } = currentRole(G)!
+  if (role === 'trader') {
+    // Hut: draw a card if nobody sold anything this phase.
+    if (G.soldThisPhase === 0) {
+      for (const p of orderFrom(ctx, chooser))
+        if (owns(G.players[p], 'hut') && drawToHand(G, rng, p, 1)) log(G, { key: 'hutDraw' }, p)
+    }
+    if (G.tradeTile !== null) {
+      // The used tile goes face down to the bottom of the stack.
+      G.tradeTiles.push(G.tradeTiles.shift()!)
+      G.tradeTile = null
+    }
+  }
+  if (role === 'builder') {
+    // Tavern: draw a card if nobody has fewer buildings than you.
+    const fewest = Math.min(...Object.values(G.players).map((pl) => pl.buildings.length))
+    for (const p of orderFrom(ctx, chooser)) {
+      const pl = G.players[p]
+      if (owns(pl, 'tavern') && pl.buildings.length === fewest && drawToHand(G, rng, p, 1)) log(G, { key: 'tavernDraw' }, p)
+    }
   }
   if (role === 'builder' && Object.values(G.players).some((pl) => pl.buildings.length >= BUILDINGS_TO_END)) {
     endGame(G, ctx)
@@ -391,23 +451,31 @@ function checkTurn(G: SanJuanState, p: PlayerID, kind: 'governor' | 'chooseRole'
   return null
 }
 
-export function actGovernor(G: SanJuanState, p: PlayerID, chapelCard: CardId | null, discards: CardId[]): string | null {
+export function actGovernor(
+  G: SanJuanState,
+  p: PlayerID,
+  chapelCard: CardId | null,
+  discards: CardId[],
+  bankCards: CardId[] = [],
+): string | null {
   const err = checkTurn(G, p, 'governor')
   if (err) return err
   const player = G.players[p]
-  if (chapelCard !== null) {
-    if (!owns(player, 'chapel')) return 'You have no chapel.'
-    if (!player.hand.includes(chapelCard)) return 'That card is not in your hand.'
-    if (discards.includes(chapelCard)) return 'You cannot both tuck and discard the same card.'
-  }
-  const required = governorDiscardCount(player, chapelCard !== null)
+  if (chapelCard !== null && !owns(player, 'chapel')) return 'You have no chapel.'
+  if (bankCards.length > 0 && !canUseBank(player)) return 'You have no unused bank.'
+  const required = governorDiscardCount(G, player, chapelCard !== null, bankCards.length)
   if (discards.length !== required) return `You must discard exactly ${plural(required, 'card')}.`
   const hand = [...player.hand]
-  if (!takeCards(hand, discards)) return 'Discards must be distinct cards from your hand.'
+  const chapelList = chapelCard === null ? [] : [chapelCard]
+  if (!takeCards(hand, [...chapelList, ...bankCards, ...discards])) return 'Choose distinct cards from your hand.'
   if (chapelCard !== null) {
-    hand.splice(hand.indexOf(chapelCard), 1)
     player.chapel.push(chapelCard)
     log(G, { key: 'chapelTuck' }, p)
+  }
+  if (bankCards.length > 0) {
+    player.bank.push(...bankCards)
+    player.bankUsed = true
+    log(G, { key: 'bankDeposit', n: bankCards.length }, p)
   }
   player.hand = hand
   G.discard.push(...discards)
@@ -424,7 +492,10 @@ export function actChooseRole(G: SanJuanState, ctx: EngineCtx, p: PlayerID, role
   G.rolesTaken.push(role)
   G.pickers.shift()
   G.step = { kind: 'role', role, chooser: p, queue: orderFrom(ctx, p) }
-  if (role === 'trader') G.tradeTile = G.tradeTiles[0]
+  if (role === 'trader') {
+    G.tradeTile = G.tradeTiles[0]
+    G.soldThisPhase = 0
+  }
   log(G, { key: 'chooseRole', role }, p)
   return null
 }
@@ -534,15 +605,23 @@ export function actSell(G: SanJuanState, ctx: EngineCtx, rng: Rng, p: PlayerID, 
   if (indexes.length > max - privilege(G, ctx, p) + 1) markLibraryUse(G, ctx, p, privilegeFactor(G, ctx, p))
 
   let income = 0
-  const sold: GoodType[] = []
+  const sold: SoldGood[] = []
+  const soldCards: CardId[] = []
   for (const i of indexes) {
     const b = player.buildings[i]
-    const good = cardDef(b.card).good!
-    income += goodPrice(G.tradeTile, good)
-    sold.push(good)
-    G.discard.push(b.good!)
+    const def = cardDef(b.card)
+    income += sellPrice(G, b.card)
+    sold.push(def.type === 'customs_office' ? 'customs' : def.good!)
+    soldCards.push(b.good!)
     b.good = null
   }
+  G.soldThisPhase += indexes.length
+  // Harbor: one of the sold goods is kept under it as a VP.
+  if (owns(player, 'harbor')) {
+    player.harbor.push(soldCards.shift()!)
+    log(G, { key: 'harborStore' }, p)
+  }
+  G.discard.push(...soldCards)
   if (indexes.length >= 2 && owns(player, 'market_stand')) income += 1
   if (owns(player, 'market_hall')) income += 1
   const drawn = drawToHand(G, rng, p, income)
@@ -595,21 +674,45 @@ export function actPass(G: SanJuanState, p: PlayerID): string | null {
 // Scoring
 // ---------------------------------------------------------------------------
 
-export function scorePlayer(player: PlayerState, p: PlayerID): Score {
+/** Residence: sets of 3 different buildings with the same cost (each building counts once). */
+export function residenceSets(player: PlayerState): number {
+  const typesByCost = new Map<number, Set<BuildingType>>()
+  for (const b of player.buildings) {
+    const d = cardDef(b.card)
+    typesByCost.set(d.cost, (typesByCost.get(d.cost) ?? new Set()).add(d.type))
+  }
+  let sets = 0
+  for (const types of typesByCost.values()) sets += Math.floor(types.size / 3)
+  return sets
+}
+
+const setBonus = (n: number) => SET_BONUS[Math.min(n, SET_BONUS.length - 1)]
+
+export function scorePlayer(G: SanJuanState, p: PlayerID): Score {
+  const player = G.players[p]
   const defs = player.buildings.map((b) => cardDef(b.card))
   const buildings = defs.reduce((sum, d) => sum + d.vp, 0)
-  const chapel = player.chapel.length
+  const stored = player.chapel.length + player.bank.length + player.harbor.length
   const has = (t: BuildingType) => defs.some((d) => d.type === t)
   let bonus = 0
   if (has('guild_hall')) bonus += 2 * defs.filter((d) => d.kind === 'production').length
   if (has('city_hall')) bonus += defs.filter((d) => d.kind === 'violet').length
   if (has('triumphal_arch')) bonus += [0, 4, 6, 8][defs.filter((d) => d.monument).length]
-  const subtotal = buildings + chapel + bonus
+  if (has('residence')) bonus += setBonus(residenceSets(player))
+  if (has('cathedral')) {
+    // Counts the cost-6 buildings owned by all opponents together.
+    const opponentSixes = Object.entries(G.players)
+      .filter(([id]) => id !== p)
+      .flatMap(([, pl]) => pl.buildings)
+      .filter((b) => cardDef(b.card).cost === 6).length
+    bonus += setBonus(opponentSixes)
+  }
+  const subtotal = buildings + stored + bonus
   const palace = has('palace') ? Math.floor(subtotal / 4) : 0
   return {
     player: p,
     buildings,
-    chapel,
+    stored,
     bonus,
     palace,
     total: subtotal + palace,
@@ -618,7 +721,7 @@ export function scorePlayer(player: PlayerState, p: PlayerID): Score {
 }
 
 function endGame(G: SanJuanState, ctx: EngineCtx) {
-  const scores = ctx.playOrder.map((p) => scorePlayer(G.players[p], p))
+  const scores = ctx.playOrder.map((p) => scorePlayer(G, p))
   const best = Math.max(...scores.map((s) => s.total))
   const top = scores.filter((s) => s.total === best)
   const bestTie = Math.max(...top.map((s) => s.tiebreak))
@@ -628,11 +731,11 @@ function endGame(G: SanJuanState, ctx: EngineCtx) {
   log(G, { key: 'gameOver', winners: G.winners, vp: best })
 }
 
-/** Total number of cards anywhere — always 110 (used by tests). */
+/** Total number of cards anywhere — constant for a game (used by tests). */
 export function countAllCards(G: SanJuanState): number {
   let n = G.deck.length + G.discard.length + (G.reveal?.cards.length ?? 0)
   for (const pl of Object.values(G.players)) {
-    n += pl.hand.length + pl.chapel.length + pl.pending.length
+    n += pl.hand.length + pl.chapel.length + pl.bank.length + pl.harbor.length + pl.pending.length
     n += pl.buildings.reduce((s, b) => s + 1 + (b.good !== null ? 1 : 0), 0)
   }
   return n

@@ -5,6 +5,7 @@
 import { ROLES, cardDef } from './cards'
 import {
   buildCost,
+  canUseBank,
   councilDiscardCount,
   governorDiscardCount,
   maxGoodsPayment,
@@ -31,7 +32,13 @@ export function legalActions(G: SanJuanState, ctx: EngineCtx): BotAction[] {
       const tucks = owns(player, 'chapel') && player.hand.length > 0 ? [null, player.hand[0]] : [null]
       for (const tuck of tucks) {
         const rest = player.hand.filter((c) => c !== tuck)
-        options.push({ move: 'governorAction', args: [tuck, rest.slice(0, governorDiscardCount(player, tuck !== null))] })
+        // Optionally deposit half the remaining hand in an unused bank.
+        const bankings = canUseBank(player) && rest.length > 0 ? [0, Math.ceil(rest.length / 2)] : [0]
+        for (const n of bankings) {
+          const bank = rest.slice(0, n)
+          const discards = rest.slice(n, n + governorDiscardCount(G, player, tuck !== null, n))
+          options.push({ move: 'governorAction', args: [tuck, discards, bank] })
+        }
       }
       return options
     }

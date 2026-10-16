@@ -1,4 +1,4 @@
-import type { BuildingType, CardId, GoodType, RoleId } from './cards'
+import type { BuildingType, CardId, GoodType, RoleId, SoldGood } from './cards'
 
 export type PlayerID = string
 
@@ -13,6 +13,11 @@ export interface PlayerState {
   buildings: Building[]
   /** Cards tucked under the chapel (1 VP each at game end). */
   chapel: CardId[]
+  /** Cards deposited in the bank (1 VP each); the bank can be used once per game. */
+  bank: CardId[]
+  bankUsed: boolean
+  /** Sold goods kept under the harbor (1 VP each). */
+  harbor: CardId[]
   /** Councillor: drawn cards waiting for the keep/discard decision. */
   pending: CardId[]
 }
@@ -39,14 +44,16 @@ export interface GoldMineReveal {
 export type LogEvent =
   | { key: 'roundStart'; governor: PlayerID }
   | { key: 'cannotBuild' | 'noEmptyProduction' | 'noGoods' | 'chapelTuck' | 'pass' }
-  | { key: 'poorHouseDraw' | 'carpenterDraw' | 'wellDraw' }
+  | { key: 'poorHouseDraw' | 'carpenterDraw' | 'wellDraw' | 'tavernDraw' | 'hutDraw' | 'customsGood' | 'harborStore' }
+  | { key: 'bankDeposit'; n: number }
+  | { key: 'goldsmithKeep' | 'goldsmithMiss'; card: BuildingType }
   | { key: 'councilKeptAll' | 'prospect' | 'handLimitDiscard' | 'councilKeep'; n: number }
   | { key: 'goldStrike' | 'goldMiss'; cards: BuildingType[] }
   | { key: 'goldTake'; card: BuildingType }
   | { key: 'chooseRole'; role: RoleId }
   | { key: 'build'; card: BuildingType; n: number; over?: BuildingType }
   | { key: 'produce'; goods: GoodType[] }
-  | { key: 'sell'; goods: GoodType[]; n: number }
+  | { key: 'sell'; goods: SoldGood[]; n: number }
   | { key: 'gameOver'; winners: PlayerID[]; vp: number }
 
 export type LogEntry = LogEvent & {
@@ -58,8 +65,9 @@ export interface Score {
   player: PlayerID
   /** Printed VP of all buildings. */
   buildings: number
-  chapel: number
-  /** Guild hall, city hall and triumphal arch. */
+  /** Cards under the chapel, in the bank and under the harbor (1 VP each). */
+  stored: number
+  /** Guild hall, city hall, triumphal arch, residence and cathedral. */
   bonus: number
   palace: number
   total: number
@@ -68,6 +76,10 @@ export interface Score {
 }
 
 export interface SanJuanState {
+  /** Playing with the "New Buildings" expansion. */
+  expansion: boolean
+  /** Goods sold so far in the current trader phase (for the hut). */
+  soldThisPhase: number
   deck: CardId[]
   discard: CardId[]
   players: Record<PlayerID, PlayerState>

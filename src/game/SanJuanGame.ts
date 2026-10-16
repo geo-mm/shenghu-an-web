@@ -13,6 +13,7 @@ import {
   advance,
   createInitialState,
   type BuildAction,
+  type GameOptions,
 } from './engine'
 import type { SanJuanState } from './state'
 
@@ -43,13 +44,18 @@ function move<A extends unknown[]>(
 
 const hide = (cards: CardId[]) => cards.map(() => HIDDEN_CARD)
 
-export const SanJuanGame: Game<SanJuanState> = {
+/**
+ * Builds the game definition. Options are baked into `setup` because the P2P
+ * host creates the match without setupData; only the host's copy runs setup.
+ */
+export function createSanJuanGame(options: GameOptions = {}): Game<SanJuanState> {
+  return {
   // A unique name matters for P2P: it is part of the host's PeerJS ID.
   name: 'san-juan-p2p',
   minPlayers: 2,
   maxPlayers: 4,
 
-  setup: ({ ctx, random }) => createInitialState(ctx, random),
+  setup: ({ ctx, random }) => createInitialState(ctx, random, options),
 
   // Whoever must decide next (G.actor) gets the turn.
   turn: {
@@ -60,8 +66,8 @@ export const SanJuanGame: Game<SanJuanState> = {
   },
 
   moves: {
-    governorAction: move(({ G }, p, chapelCard: CardId | null, discards: CardId[]) =>
-      actGovernor(G, p, chapelCard, discards),
+    governorAction: move(({ G }, p, chapelCard: CardId | null, discards: CardId[], bankCards: CardId[] = []) =>
+      actGovernor(G, p, chapelCard, discards, bankCards),
     ),
     chooseRole: move(({ G, ctx }, p, role: RoleId) => actChooseRole(G, ctx, p, role)),
     build: move(({ G, ctx, random }, p, action: BuildAction) => actBuild(G, ctx, random, p, action)),
@@ -84,9 +90,15 @@ export const SanJuanGame: Game<SanJuanState> = {
           hand: id === playerID ? pl.hand : hide(pl.hand),
           pending: id === playerID ? pl.pending : hide(pl.pending),
           chapel: id === playerID ? pl.chapel : hide(pl.chapel),
+          bank: id === playerID ? pl.bank : hide(pl.bank),
+          bankUsed: pl.bankUsed,
+          harbor: hide(pl.harbor),
           buildings: pl.buildings.map((b) => ({ card: b.card, good: b.good === null ? null : HIDDEN_CARD })),
         },
       ]),
     ),
   }),
 }
+}
+
+export const SanJuanGame = createSanJuanGame()

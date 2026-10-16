@@ -85,7 +85,7 @@ player `1`. The lobby currently seats 2 players; the rules engine supports 2–4
 
 1. A building's ability works only from the action *after* it is built.
 2. Goods of the same type may be sold together.
-4. Gold mine: fewer than 4 cards left in deck and discard counts as a miss.
+3. Gold mine: fewer than 4 cards left in deck and discard counts as a miss.
 4. Tavern: ties for the fewest buildings count as “fewest”.
 5. Cathedral counts the cost-6 buildings of all opponents together.
 6. Residence: a set is 3 different building types with the same cost; each building is used once.

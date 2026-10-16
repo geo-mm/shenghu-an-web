@@ -1,0 +1,36 @@
+.app { max-width: 900px; margin: 0 auto; padding: 16px; display: flex; flex-direction: column; gap: 16px; min-height: 100svh; }
+.app-header { display: flex; align-items: center; justify-content: space-between; }
+.app-header h1 { margin: 8px 0; font-size: 1.8rem; }
+.panel { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; }
+.panel h2 { margin: 0 0 8px; font-size: 1.2rem; }
+.panel h3 { margin: 12px 0 6px; font-size: 1rem; }
+.muted { color: var(--muted); }
+.small { font-size: 0.85rem; }
+.warn { color: var(--warn); }
+.error { color: var(--bad); font-weight: 600; margin: 0; }
+footer { margin-top: auto; }
+
+.lobby { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.join-form { display: flex; gap: 8px; }
+
+.status-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--muted); flex: none; }
+.dot-connected { background: var(--ok); }
+.dot-connecting, .dot-waiting { background: var(--warn); animation: pulse 1.2s ease-in-out infinite; }
+.dot-error, .dot-offline { background: var(--bad); }
+@keyframes pulse { 50% { opacity: 0.3; } }
+
+.player-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; }
+.player-list li { display: flex; align-items: center; gap: 8px; }
+.tag { font-size: 0.75rem; background: var(--accent); color: var(--accent-text); border-radius: 999px; padding: 0 8px; }
+
+.token { font: 700 2.4rem/1.2 ui-monospace, Consolas, monospace; letter-spacing: 0.2em; color: var(--accent); margin: 4px 0 8px; }
+.invite { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.invite code { overflow-wrap: anywhere; }
+
+.board-header { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; }
+.turn-banner { margin: 8px 0 12px; padding: 8px 12px; border-radius: 8px; background: var(--code-bg); }
+.turn-banner.mine { background: var(--accent); color: var(--accent-text); font-weight: 600; }
+.hands { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); margin-top: 12px; }
+.cards { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.card { border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 6px; padding: 6px 10px; background: var(--bg); font-size: 0.9rem; }

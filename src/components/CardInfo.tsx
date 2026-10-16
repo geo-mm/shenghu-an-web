@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import { BUILDINGS, HIDDEN_CARD, cardDef, type CardId } from '../game/cards'
 import { useI18n } from '../i18n/I18n'
 import { MESSAGES } from '../i18n/messages'
+import { CardView } from './CardView'
 
 const CardInfoContext = createContext<(id: CardId) => void>(() => {})
 
@@ -48,6 +49,9 @@ function CardInfoDialog({ id, onClose }: { id: CardId; onClose: () => void }) {
         data-testid="card-info"
         onClick={(e) => e.stopPropagation()}
       >
+        <div className="card-info-card">
+          <CardView id={id} width="min(240px, 70vw)" />
+        </div>
         <h2 id="card-info-title">{name}</h2>
         <p className="muted">
           {otherName} · {t.kind[kind]}

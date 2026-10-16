@@ -14,6 +14,7 @@ import {
 } from '../game/engine'
 import type { PlayerID, SanJuanState } from '../game/state'
 import type { ClientState, MatchPlayer } from '../hooks/useP2PMatch'
+import { roleArt } from '../art'
 import { useI18n } from '../i18n/I18n'
 import type { Messages } from '../i18n/messages'
 import { CardInfoProvider } from './CardInfo'
@@ -132,6 +133,7 @@ function RolePanel({ G, playerID, onChoose }: { G: SanJuanState; playerID: Playe
               data-testid={`role-${r}`}
               title={t.roleSummary(t.roles[r].action, t.roles[r].privilege)}
             >
+              {roleArt(r) && <img className="role-art" src={roleArt(r)} alt="" draggable={false} />}
               <strong>{t.roles[r].name}</strong>
               <span className="small">{t.roles[r].privilege}</span>
             </button>

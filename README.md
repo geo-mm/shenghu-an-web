@@ -94,6 +94,14 @@ player `1`. The lobby currently seats 2 players; the rules engine supports 2–4
 8. Harbor: one sold good is always kept (automatic). Goldsmith: the turned-up card is discarded
     if any player, including you, already has that building.
 
+## Card art
+
+Cards are laid out like the physical cards (cost medallions, 4:3 art, name ribbon, effect text,
+VP badge). Artwork is optional and added one image at a time: prompts for ChatGPT are in
+[`docs/card-art-prompts.md`](docs/card-art-prompts.md); put the downloaded images in `art-src/`
+(git-ignored) and run `npm run art`, which crops, compresses and keys out the magenta backgrounds
+into `src/assets/art/`. Missing images fall back to the CSS-drawn card.
+
 ## Signaling
 
 WebRTC needs a signaling step to introduce peers. PeerJS uses its free public cloud server

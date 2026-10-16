@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Raw artwork from ChatGPT (processed copies live in src/assets/art)
+art-src/

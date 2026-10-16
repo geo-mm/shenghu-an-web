@@ -23,6 +23,19 @@ Open the app in two browsers (or two devices):
 4. Press *Draw Card* on whichever screen has the turn; the card, turn counter and state ID
    update on both screens.
 
+## Deploy (GitHub Pages)
+
+`.github/workflows/deploy.yml` builds and deploys on every push to `main`. One-time setup:
+repo **Settings → Pages → Build and deployment → Source: GitHub Actions**. The site is then
+served at `https://<owner>.github.io/<repo>/`.
+
+## Testing with two players
+
+Use two *separate* browser sessions so each gets its own peer — e.g. a normal window and an
+incognito window, two different browsers, or a computer and a phone. Host in one, join with the
+token (or invite link) in the other, then take turns pressing *Draw Card* and check both screens
+show the same hands, turn number and state ID.
+
 ## How it fits together
 
 | File | Purpose |

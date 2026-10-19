@@ -86,6 +86,8 @@ export interface SanJuanState {
   /** Players still to pick a role this round, in order. */
   pickers: PlayerID[]
   rolesTaken: RoleId[]
+  /** Who chose each role taken this round. */
+  roleChoosers: Partial<Record<RoleId, PlayerID>>
   step: Step
   actor: PlayerID
   /** Trading house tile stack (indexes into TRADE_TILES), top first. */

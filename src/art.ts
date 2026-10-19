@@ -10,11 +10,15 @@ const urls = (files: Record<string, string>) =>
 
 const buildings = urls(import.meta.glob('./assets/art/buildings/*.webp', { eager: true, query: '?url', import: 'default' }))
 const roles = urls(import.meta.glob('./assets/art/roles/*.webp', { eager: true, query: '?url', import: 'default' }))
+const avatars = urls(import.meta.glob('./assets/art/avatars/*.webp', { eager: true, query: '?url', import: 'default' }))
 const ui = urls(import.meta.glob('./assets/art/ui/*.webp', { eager: true, query: '?url', import: 'default' }))
 
 export const buildingArt = (type: BuildingType): string | undefined => buildings[type]
 /** Role art; 'governor' is the start-player card, not a selectable role. */
 export const roleArt = (role: RoleId | 'governor'): string | undefined => roles[role]
+
+/** Player avatar for seat colour `n` (0–3), drawn on the player's token when present. */
+export const playerAvatar = (n: number): string | undefined => avatars[`player-${n}`]
 
 /** Decorative card parts; each one replaces its CSS fallback when present. */
 export const UI_PARTS = ['frame', 'card-back', 'ribbon', 'medallion', 'vp-badge', 'text-panel'] as const

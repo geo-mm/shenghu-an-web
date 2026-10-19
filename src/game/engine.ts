@@ -286,6 +286,7 @@ export function createInitialState(ctx: EngineCtx, rng: Rng, options: GameOption
     governor,
     pickers: pickOrder(ctx, governor),
     rolesTaken: [],
+    roleChoosers: {},
     // No governor phase in round 1: nobody can be over the limit or own a chapel.
     step: { kind: 'chooseRole' },
     actor: governor,
@@ -455,6 +456,7 @@ function finishRole(G: SanJuanState, ctx: EngineCtx, rng: Rng) {
   G.governor = nextPlayer(ctx, G.governor)
   G.pickers = pickOrder(ctx, G.governor)
   G.rolesTaken = []
+  G.roleChoosers = {}
   G.governorUsedLibrary = false
   log(G, { key: 'roundStart', governor: G.governor })
   G.step = { kind: 'governor', queue: orderFrom(ctx, G.governor) }
@@ -536,6 +538,7 @@ export function actChooseRole(G: SanJuanState, ctx: EngineCtx, p: PlayerID, role
   if (!ROLES.includes(role)) return 'Unknown role.'
   if (G.rolesTaken.includes(role)) return 'That role was already chosen this round.'
   G.rolesTaken.push(role)
+  G.roleChoosers[role] = p
   G.pickers.shift()
   G.step = { kind: 'role', role, chooser: p, queue: orderFrom(ctx, p) }
   if (role === 'trader') {

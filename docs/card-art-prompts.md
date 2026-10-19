@@ -173,6 +173,21 @@ No text.
 
 ---
 
+## 玩家徽章（4 張，正方形 1024×1024，選用）
+
+每位玩家固定一個顏色，畫面上的座位、選過的角色卡、紀錄裡的名字都會用這個顏色。
+徽章會縮得很小（約 24～40px）並裁成圓形，所以每張只畫**一個簡單、輪廓清楚的圖案**，主色要跟玩家顏色一致。
+沒有徽章時，程式會畫一個有編號的彩色圓點。
+
+| 檔名 | 玩家顏色 | 貼給 ChatGPT |
+|---|---|---|
+| `player-0.png` | 青綠 | `A round heraldic emblem (same style) filling the whole square: a golden ship's anchor on a deep teal (#0b7285) disc with a thin gold rim, bold simple shapes that stay readable when very small. No text.` |
+| `player-1.png` | 緋紅 | `A round heraldic emblem (same style) filling the whole square: a small golden sailing ship on a crimson red (#c92a2a) disc with a thin gold rim, bold simple shapes that stay readable when very small. No text.` |
+| `player-2.png` | 琥珀橘 | `A round heraldic emblem (same style) filling the whole square: a radiant golden-white sun on an amber orange (#e67700) disc with a thin gold rim, bold simple shapes that stay readable when very small. No text.` |
+| `player-3.png` | 橄欖綠 | `A round heraldic emblem (same style) filling the whole square: a golden olive branch on a deep green (#2b8a3e) disc with a thin gold rim, bold simple shapes that stay readable when very small. No text.` |
+
+---
+
 ## 自動產生（選用）
 
 `scripts/generate_art.py` 會讀這份文件，替每個檔名組好「共用風格 + 該張描述」再送出，存到 `art-src/`：

@@ -16,7 +16,7 @@ import {
 } from '../game/engine'
 import type { PlayerID, SanJuanState } from '../game/state'
 import type { ClientState, MatchPlayer } from '../hooks/useP2PMatch'
-import { roleArt } from '../art'
+import { playerAvatar, roleArt } from '../art'
 import { useI18n } from '../i18n/I18n'
 import type { Messages } from '../i18n/messages'
 import { CardInfoProvider } from './CardInfo'
@@ -85,6 +85,29 @@ export function Board({ state, playerID, players, moves }: Props) {
   )
 }
 
+/** Each player's colour (and avatar slot) follows their player number, so everyone sees the same colours. */
+const pc = (p: PlayerID) => `pc-${Number(p) % 4}`
+
+/** A small round token in the player's colour: their avatar if there is one, else their number. */
+function PlayerToken({ p }: { p: PlayerID }) {
+  const avatar = playerAvatar(Number(p) % 4)
+  return (
+    <span className={`ptoken ${pc(p)}`} aria-hidden>
+      {avatar ? <img src={avatar} alt="" draggable={false} /> : p}
+    </span>
+  )
+}
+
+function PlayerName({ p, me }: { p: PlayerID; me: PlayerID }) {
+  const who = useWho(me)
+  return (
+    <span className={`pname ${pc(p)}`}>
+      <PlayerToken p={p} />
+      {who(p)}
+    </span>
+  )
+}
+
 /** A row of cards that overlap just enough to fit their container, like a hand of mahjong tiles. */
 function Fan({ n, className = '', children, ...rest }: { n: number; className?: string; children: ReactNode; 'data-testid'?: string }) {
   return (
@@ -96,13 +119,12 @@ function Fan({ n, className = '', children, ...rest }: { n: number; className?: 
 
 function OpponentSeat({ G, p, me, seat, online }: { G: SanJuanState; p: PlayerID; me: PlayerID; seat: Seat; online: boolean }) {
   const { t } = useI18n()
-  const who = useWho(me)
   const pl = G.players[p]
   const stored = storedText(t, pl)
   return (
-    <div className={`seat seat-${seat} ${G.actor === p && G.step.kind !== 'gameOver' ? 'acting' : ''}`} data-testid={`area-${p}`}>
+    <div className={`seat seat-${seat} ${pc(p)} ${G.actor === p && G.step.kind !== 'gameOver' ? 'acting' : ''}`} data-testid={`area-${p}`}>
       <div className="seat-info">
-        <strong>{who(p)}</strong>
+        <PlayerName p={p} me={me} />
         {G.governor === p && <span className="tag">{t.governorTag}</span>}
         {!online && <span className="warn small">{t.offline}</span>}
         <span className="seat-hand" title={t.inHand(pl.hand.length)}>
@@ -158,6 +180,7 @@ interface RolePanelProps {
 
 function RolePanel({ G, playerID, actionBox, onChoose }: RolePanelProps) {
   const { t } = useI18n()
+  const who = useWho(playerID)
   const [picked, setPicked] = useState<RoleId | null>(null)
   const canChoose = G.step.kind === 'chooseRole' && G.actor === playerID
   const active = G.step.kind === 'role' ? G.step.role : null
@@ -166,16 +189,23 @@ function RolePanel({ G, playerID, actionBox, onChoose }: RolePanelProps) {
       <div className="roles">
         {ROLES.map((r) => {
           const taken = G.rolesTaken.includes(r)
+          const chooser = G.roleChoosers?.[r]
           return (
             <button
               key={r}
-              className={`role ${active === r ? 'active' : ''} ${picked === r ? 'picked' : ''} ${taken ? 'taken' : ''}`}
+              className={`role ${active === r ? 'active' : ''} ${picked === r ? 'picked' : ''} ${taken ? 'taken' : ''} ${chooser != null ? `chosen ${pc(chooser)}` : ''}`}
               disabled={!canChoose || taken}
               aria-pressed={picked === r}
               onClick={() => setPicked(picked === r ? null : r)}
               data-testid={`role-${r}`}
               title={t.roleSummary(t.roles[r].action, t.roles[r].privilege)}
             >
+              {chooser != null && (
+                <span className="role-chooser" data-testid={`role-chooser-${r}`}>
+                  <PlayerToken p={chooser} />
+                  {who(chooser)}
+                </span>
+              )}
               {roleArt(r) && <img className="role-art" src={roleArt(r)} alt="" draggable={false} />}
               <strong>{t.roles[r].name}</strong>
               <span className="small role-privilege">{t.roles[r].privilege}</span>
@@ -459,10 +489,13 @@ function MyArea({ G, ctx, playerID, moves, actionBox }: MyAreaProps) {
   const buildingTag = mode === 'producer' ? t.tags.produce : mode === 'trader' ? t.tags.sell : t.tags.pay
 
   return (
-    <div className={`seat seat-me ${myTurn && step.kind !== 'gameOver' ? 'acting' : ''}`} data-testid={`area-${playerID}`}>
+    <div className={`seat seat-me ${pc(playerID)} ${myTurn && step.kind !== 'gameOver' ? 'acting' : ''}`} data-testid={`area-${playerID}`}>
       {panel && actionBox && createPortal(<div className="action-panel">{panel}</div>, actionBox)}
       <div className="seat-info">
-        <strong>{t.youPlayer(playerID)}</strong>
+        <span className={`pname ${pc(playerID)}`}>
+          <PlayerToken p={playerID} />
+          {t.youPlayer(playerID)}
+        </span>
         {G.governor === playerID && <span className="tag">{t.governorTag}</span>}
         <span className="muted small">{t.buildingsTitle(me.buildings.length)}</span>
         {storedText(t, me) && <span className="muted small">{storedText(t, me)}</span>}
@@ -525,7 +558,7 @@ function Log({ G, playerID }: { G: SanJuanState; playerID: PlayerID }) {
       <ol reversed>
         {entries.map((e, i) => (
           <li key={i}>
-            <span className="muted">R{e.round}</span> {e.player != null && <strong>{who(e.player)}</strong>} {t.log(e, helpers)}
+            <span className="muted">R{e.round}</span> {e.player != null && <strong className={`pname ${pc(e.player)}`}>{who(e.player)}</strong>} {t.log(e, helpers)}
           </li>
         ))}
       </ol>
@@ -554,7 +587,9 @@ function ScoreTable({ G, playerID }: { G: SanJuanState; playerID: PlayerID }) {
           <tbody>
             {G.scores.map((s) => (
               <tr key={s.player} className={G.winners?.includes(s.player) ? 'winner' : ''}>
-                <td>{who(s.player)}</td>
+                <td>
+                  <PlayerName p={s.player} me={playerID} />
+                </td>
                 <td>{s.buildings}</td>
                 <td>{s.stored}</td>
                 <td>{s.bonus}</td>

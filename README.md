@@ -107,6 +107,10 @@ VP badge). Artwork is optional and added one image at a time: prompts for ChatGP
 (git-ignored) and run `npm run art`, which crops, compresses and keys out the magenta backgrounds
 into `src/assets/art/`. Missing images fall back to the CSS-drawn card.
 
+Each player has a fixed colour by player number (teal, crimson, amber, green), used for their
+seat, their name in the log and the badge on roles they chose this round. Optional emblems
+`player-0.png` … `player-3.png` replace the numbered tokens.
+
 ## Signaling
 
 WebRTC needs a signaling step to introduce peers. PeerJS uses its free public cloud server

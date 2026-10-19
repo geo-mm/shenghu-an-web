@@ -1,7 +1,19 @@
 import { useLayoutEffect, type RefObject } from 'react'
 
-// Strict: even a fraction of a pixel too wide makes the browser show an ellipsis.
-const overflows = (el: HTMLElement) => el.scrollWidth > el.clientWidth || el.scrollHeight > el.clientHeight
+/** Laid-out width of the element's text, in fractional pixels (scrollWidth rounds, hiding a sub-pixel overflow). */
+function textWidth(el: HTMLElement) {
+  const range = document.createRange()
+  range.selectNodeContents(el)
+  return range.getBoundingClientRect().width
+}
+
+/** How much the content must shrink to fit: 1 when it fits, below 1 when it doesn't. */
+function fitRatio(el: HTMLElement) {
+  // Even a fraction of a pixel too wide makes the browser show an ellipsis.
+  const width = el.getBoundingClientRect().width / Math.max(textWidth(el), 0.01)
+  const height = el.clientHeight / Math.max(el.scrollHeight, 1)
+  return Math.min(1, width + 1e-4, height) // tolerance for float noise when the text exactly fills its box
+}
 
 /**
  * Shrinks the element's font until its content fits its box, so text never
@@ -14,9 +26,8 @@ export function useFitText(ref: RefObject<HTMLElement | null>, content: string) 
     if (!el) return
     const fit = () => {
       el.style.fontSize = '' // start again from the size the CSS gives
-      for (let i = 0; i < 10 && overflows(el); i++) {
+      for (let i = 0, ratio = fitRatio(el); i < 10 && ratio < 1; i++, ratio = fitRatio(el)) {
         const size = parseFloat(getComputedStyle(el).fontSize)
-        const ratio = Math.min(el.clientWidth / el.scrollWidth, el.clientHeight / el.scrollHeight)
         el.style.fontSize = `${size * Math.min(0.95, Math.sqrt(ratio))}px`
       }
     }

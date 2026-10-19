@@ -69,7 +69,8 @@ footer { margin-top: auto; }
 
 .seat { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 6px 10px; min-width: 0;
   display: flex; gap: 10px; align-items: center; }
-.seat.acting { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent) inset; }
+.seat { border-left: 6px solid var(--pc, var(--border)); }
+.seat.acting { border-color: var(--pc, var(--accent)); box-shadow: 0 0 0 2px var(--pc, var(--accent)) inset; }
 .seat-info { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; flex: none; max-width: 9em; line-height: 1.25; }
 .seat-hand { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; }
 .seat-hand .sj-card { --card-w: 22px; box-shadow: none; }
@@ -91,8 +92,28 @@ footer { margin-top: auto; }
 .role-panel { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
 .roles { display: grid; grid-template-columns: repeat(6, minmax(0, 20dvh)); gap: 8px; justify-content: center; width: 100%; }
 .role { display: flex; flex-direction: column; align-items: stretch; gap: 2px; padding: 5px; text-align: center; min-width: 0; line-height: 1.25; }
-.role.active { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent) inset; opacity: 1; text-decoration: none; }
-.role.taken:not(.active) { text-decoration: line-through; }
+/* Roles stay bright when it isn't my turn; a chosen role gets the chooser's colour and badge, its art fades once played. */
+.role { position: relative; overflow: visible; }
+.role:disabled { opacity: 1; cursor: default; }
+.role.chosen { border-color: var(--pc); box-shadow: 0 0 0 2px var(--pc) inset; }
+.role.taken:not(.active) > :not(.role-chooser) { opacity: 0.4; filter: grayscale(0.7); }
+.role.active { box-shadow: 0 0 0 3px var(--pc, var(--accent)) inset, 0 0 12px color-mix(in srgb, var(--pc, var(--accent)) 60%, transparent); }
+.role-chooser { position: absolute; top: -11px; left: 50%; translate: -50% 0; z-index: 1; display: inline-flex; align-items: center; gap: 4px;
+  max-width: calc(100% + 8px); padding: 1px 8px 1px 2px; border-radius: 999px; background: var(--pc); color: #fff;
+  font-size: 0.75rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); }
+.role-chooser .ptoken { box-shadow: none; }
+.roles { padding-top: 12px; }
+
+/* Player colours (by player number) and tokens */
+.pc-0 { --pc: #0b7285; }
+.pc-1 { --pc: #c92a2a; }
+.pc-2 { --pc: #e67700; }
+.pc-3 { --pc: #2b8a3e; }
+.ptoken { display: inline-grid; place-items: center; flex: none; width: 1.7em; height: 1.7em; border-radius: 50%; overflow: hidden;
+  background: var(--pc); color: #fff; font-size: 0.8em; font-weight: 700; line-height: 1; vertical-align: middle;
+  box-shadow: 0 0 0 2px var(--panel), 0 0 0 3px var(--pc); }
+.ptoken img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pname { display: inline-flex; align-items: center; gap: 0.4em; color: var(--pc); font-weight: 700; }
 .role-privilege { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
 .action-box { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; flex: 0 1 auto; min-height: 0; overflow: auto; }
 .action-box:empty { display: none; }

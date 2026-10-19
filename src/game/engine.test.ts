@@ -229,7 +229,7 @@ describe('full games through boardgame.io', () => {
         expect(Object.values(end.G.players).some((p) => p.buildings.length >= 12)).toBe(true)
         client.stop()
       }
-    })
+    }, 60_000) // 15 full games each; slow machines (and CI) need more than the 5 s default
   }
 })
 

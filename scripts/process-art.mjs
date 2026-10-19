@@ -2,7 +2,10 @@
 /**
  * Turns raw images from ChatGPT into game-ready artwork.
  *
- *   npm run art [-- <source dir>]      (default source dir: art-src/)
+ *   npm run art [-- <source dir>] [--skip-existing]      (default source dir: art-src/)
+ *
+ * --skip-existing only processes images that aren't in the game yet, so older
+ * versions in the source folder never replace artwork that was already chosen.
  *
  * Name the source files as listed in docs/card-art-prompts.md:
  *   <building>.png       e.g. smithy.png      → 4:3 card art
@@ -19,7 +22,9 @@ import path from 'node:path'
 import sharp from 'sharp'
 
 const root = path.resolve(import.meta.dirname, '..')
-const srcDir = path.resolve(process.argv[2] ?? path.join(root, 'art-src'))
+const args = process.argv.slice(2)
+const skipExisting = args.includes('--skip-existing')
+const srcDir = path.resolve(args.find((a) => !a.startsWith('--')) ?? path.join(root, 'art-src'))
 const outDir = path.join(root, 'src/assets/art')
 
 // Building ids come straight from the card data so the two never drift apart.
@@ -73,6 +78,10 @@ for (const file of files.sort()) {
   if (!['.png', '.jpg', '.jpeg', '.webp'].includes(ext)) continue
   const name = path.basename(file, path.extname(file)).toLowerCase()
   const input = path.join(srcDir, file)
+  if (skipExisting && existsSync(path.join(outDir, artPath(name)))) {
+    console.log(`- ${file}: already in the game, skipped`)
+    continue
+  }
   if (BUILDINGS.includes(name)) {
     await cropTo(input, 640, 480, path.join(outDir, 'buildings', `${name}.webp`))
   } else if (name.startsWith('role-') && ROLES.includes(name.slice(5))) {

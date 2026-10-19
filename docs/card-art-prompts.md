@@ -43,6 +43,8 @@ You are illustrating a fantasy card game. Keep ONE consistent art style for ever
   characters.
 - Composition for character illustrations: one person, waist-up, facing the viewer at a slight angle,
   with a distinctive, recognizable face and outfit; the background shows their workplace, kept soft.
+  The six characters belong to one set and must look clearly different from each other: follow the
+  given age, build, hair, skin tone and signature colour exactly.
 - Keep the background simple and soft: few details, slightly hazy and pale toward the edges, so the
   main building clearly stands out (the art is shown small on a card).
 - Never draw any text, letters, numbers, signs with writing, logos, watermarks, borders or frames.
@@ -120,15 +122,25 @@ Reply only with the image.
 
 角色卡可以有人物。每張貼：`Character illustration (same style, one person, waist-up): <描述>`
 外貌寫得越具體（年齡、髮型、鬍子、表情、服裝），辨識度越高，重畫時也比較一致。
+六個角色刻意錯開：每人一個**主色**和一個**招牌特徵**，髮色、膚色、年齡、體型都不重複。
+
+| 角色 | 性別／年齡 | 髮型 | 主色 | 招牌特徵 |
+|---|---|---|---|---|
+| 建築師 | 女・20 多 | 黑色短鮑伯 | 赭橘 | 耳後夾鉛筆、雀斑、設計圖 |
+| 製造商 | 男・30 多 | 金髮往後梳＋短鬍 | 森林綠 | 寬肩、工具皮帶、貨箱 |
+| 貿易商 | 女・40 多 | 灰黑髮包酒紅絲巾 | 酒紅＋金 | 大金耳環、天秤、錢幣 |
+| 議員 | 女・50 多 | 銀白髮髻 | 深紫 | 細框眼鏡、白蕾絲領、羽毛筆 |
+| 礦工 | 男・30 出頭 | 紅棕短髮＋鬍渣 | 青綠＋棕 | 舊皮帽、十字鎬、大背包 |
+| 總督 | 男・40 多 | 黑髮兩鬢灰＋尖鬍 | 深藍＋金 | 金鈕扣、披肩、陽台旗幟 |
 
 | 檔名 | 角色 | 描述 |
 |---|---|---|
-| `role-builder.png` | 建築師 | A determined young woman in her mid-20s with sun-tanned skin, dark brown curly hair tied up in a headscarf and bright green eyes, a light smudge of dust on her cheek, wearing a sturdy work apron and closely examining building plans in her hands; rising stone walls and wooden scaffolding behind her. |
-| `role-producer.png` | 製造商 | A rugged workshop owner in his late 30s with a broad build, messy blonde hair pushed back, tanned weathered skin and a focused expression, wearing rolled-up linen sleeves and a leather tool belt, checking an inventory sheet beside neatly stacked wooden crates of finished goods. |
-| `role-trader.png` | 貿易商 | A friendly, worldly merchant woman in her late 40s with warm brown skin, thick dark hair streaked with grey and pinned up under a colorful silk scarf, gold hoop earrings, sharp observant eyes and a confident smile, handing over a neatly tied wooden crate at a harbor counter; a few shining coins and a small brass scale rest on the table. |
-| `role-councillor.png` | 議員 | A distinguished woman in her 50s with silver-grey hair neatly pinned up, thin wire-rimmed spectacles and sharp intelligent eyes, wearing rich deep-purple velvet robes and signing parchment documents with a quill at a polished wooden desk; a window shows a sunny town square. |
-| `role-prospector.png` | 礦工 | A tough, weathered adventurer in his early 30s with short reddish-brown hair, a thick stubble beard and a warm rugged smile, wearing a sturdy travel jacket and a heavy backpack, a pickaxe over his shoulder, looking out over a wide sunlit valley and the sea. |
-| `role-governor.png` | 總督 | An elegant, authoritative town governor in his late 40s with sharp features, neat black hair and an aristocratic posture, wearing formal embroidered attire with a decorative mantle, standing on a white stone balcony above the harbor with colorful flags fluttering in the wind. |
+| `role-builder.png` | 建築師 | A lively young woman in her mid-20s with fair, freckled skin, a short black bob with a pencil tucked behind one ear and bright green eyes, slim build, wearing an ochre-orange work apron over a cream shirt with rolled sleeves, a measuring rope on her belt, holding large rolled-out building plans; rising stone walls and wooden scaffolding behind her. Signature colour: ochre orange. |
+| `role-producer.png` | 製造商 | A broad-shouldered workshop owner in his late 30s with tanned weathered skin, messy blonde hair pushed back and a short blonde beard, wearing a forest-green work vest with rolled-up linen sleeves and a leather tool belt, a pencil stub in hand, checking an inventory sheet beside neatly stacked wooden crates of finished goods. Signature colour: forest green. |
+| `role-trader.png` | 貿易商 | A confident, worldly merchant woman in her late 40s with warm brown skin, thick dark hair streaked with grey and wrapped in a wine-red silk headscarf with gold embroidery, large gold hoop earrings and a knowing smile, slightly plump, handing over a neatly tied wooden crate at a harbor counter; a few shining coins and a small brass scale rest on the table. Signature colour: wine red and gold. |
+| `role-councillor.png` | 議員 | A dignified, slender woman in her late 50s with pale skin, silver-white hair in a neat bun, thin wire-rimmed spectacles and a calm, sharp gaze, wearing rich deep-purple velvet robes with a white lace collar, signing parchment documents with a long feather quill at a polished wooden desk; a window shows a sunny town square. Signature colour: deep purple. |
+| `role-prospector.png` | 礦工 | A tough, lanky adventurer in his early 30s with sun-browned skin, short reddish-brown hair under a battered leather hat, a thick stubble beard and a warm rugged grin, wearing a teal travel coat with many pockets and a heavy backpack, a pickaxe over his shoulder, looking out over a wide sunlit valley and the sea. Signature colour: teal and brown. |
+| `role-governor.png` | 總督 | An elegant, authoritative town governor in his late 40s with olive skin, dark hair greying at the temples, a neatly trimmed pointed beard and a proud upright posture, wearing a navy-blue embroidered coat with gold buttons and a short ceremonial mantle, standing on a white stone balcony above the harbor with colorful flags fluttering in the wind. Signature colour: navy blue and gold. |
 
 ---
 

@@ -1,6 +1,7 @@
 import { useRef } from 'react'
 import { buildingArt } from '../art'
 import { HIDDEN_CARD, cardDef, type CardId } from '../game/cards'
+import { useFitText } from '../hooks/useFitText'
 import { useI18n } from '../i18n/I18n'
 import { useShowCardInfo } from './CardInfo'
 
@@ -33,6 +34,11 @@ export function CardView({ id, selected, tag, hasGood, onClick, disabled, width 
   // Set when a long-press opened the details, so the click that follows is ignored.
   const longPressed = useRef(false)
   const style = width ? ({ '--card-w': width } as React.CSSProperties) : undefined
+  const nameRef = useRef<HTMLSpanElement>(null)
+  const textRef = useRef<HTMLDivElement>(null)
+  const [name, text] = id === HIDDEN_CARD ? ['', ''] : t.cards[cardDef(id).type]
+  useFitText(nameRef, name)
+  useFitText(textRef, text)
 
   if (id === HIDDEN_CARD)
     return (
@@ -41,7 +47,6 @@ export function CardView({ id, selected, tag, hasGood, onClick, disabled, width 
       </div>
     )
   const def = cardDef(id)
-  const [name, text] = t.cards[def.type]
   const art = buildingArt(def.type)
   const color = def.kind === 'production' ? def.good : def.monument ? 'monument' : def.bonus ? 'six' : 'violet'
   const className = `sj-card c-${color} ${selected ? 'selected' : ''} ${onClick && !disabled ? 'clickable' : ''}`
@@ -87,9 +92,9 @@ export function CardView({ id, selected, tag, hasGood, onClick, disabled, width 
         {def.cost}
       </span>
       <div className="sj-name" style={{ '--name-em': textEm(name) } as React.CSSProperties}>
-        <span>{name}</span>
+        <span ref={nameRef}>{name}</span>
       </div>
-      <div className="sj-text" style={{ '--text-em': textEm(text) } as React.CSSProperties}>
+      <div className="sj-text" ref={textRef} style={{ '--text-em': textEm(text) } as React.CSSProperties}>
         {text}
       </div>
       <span className="sj-vp" title={t.vp}>

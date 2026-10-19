@@ -6,6 +6,10 @@ import { useShowCardInfo } from './CardInfo'
 
 const LONG_PRESS_MS = 500
 
+/** Rough rendered width of a text in em: CJK characters are about 1em wide, Latin letters about half that. */
+const textEm = (name: string) =>
+  [...name].reduce((w, ch) => w + (/[⺀-鿿豈-﫿＀-￯]/.test(ch) ? 1 : ch === ' ' ? 0.3 : 0.58), 0)
+
 interface Props {
   id: CardId
   selected?: boolean
@@ -82,10 +86,12 @@ export function CardView({ id, selected, tag, hasGood, onClick, disabled, width 
       <span className="sj-cost right" aria-hidden>
         {def.cost}
       </span>
-      <div className="sj-name">
+      <div className="sj-name" style={{ '--name-em': textEm(name) } as React.CSSProperties}>
         <span>{name}</span>
       </div>
-      <div className="sj-text">{text}</div>
+      <div className="sj-text" style={{ '--text-em': textEm(text) } as React.CSSProperties}>
+        {text}
+      </div>
       <span className="sj-vp" title={t.vp}>
         {def.bonus ? '?' : def.vp}
       </span>

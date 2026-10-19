@@ -107,14 +107,16 @@ button.sj-card { cursor: default; }
 /* name ribbon */
 .sj-name { position: absolute; top: 72cqw; left: 3cqw; right: 3cqw; height: 15cqw; display: grid; place-items: center; z-index: 1;
   background: linear-gradient(#f9efd6, #e6d2a4); clip-path: polygon(0 15%, 6% 0, 94% 0, 100% 15%, 96% 50%, 100% 85%, 94% 100%, 6% 100%, 0 85%, 4% 50%);
-  font-weight: 700; font-size: clamp(9px, 11cqw, 30px); color: #2b1d0c; padding: 0 8cqw; }
+  /* --name-em is the name's width in em (set by CardView), so long names shrink to fit the ribbon's flat middle. */
+  font-weight: 700; font-size: max(8px, min(8cqw, 52cqw / var(--name-em, 4))); color: #2b1d0c; padding: 0 18cqw 1.5cqw; }
 .sj-name span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 .art-ribbon .sj-name { background: var(--sj-ribbon) center / 100% 100% no-repeat; clip-path: none; }
 
 /* effect text panel (only legible on large cards) */
 .sj-text { position: absolute; top: 89cqw; left: 8cqw; right: 8cqw; bottom: 26cqw; border-radius: 2cqw;
   background: rgba(255, 252, 240, 0.75); box-shadow: inset 0 0 0 0.5cqw rgba(90, 64, 32, 0.25);
-  display: grid; place-items: center; padding: 3cqw 4cqw; font-size: 6.2cqw; line-height: 1.35; color: transparent; overflow: hidden; }
+  /* --text-em (set by CardView) shrinks long texts so they still fit the panel. */
+  display: grid; place-items: center; padding: 3cqw 4cqw; font-size: min(6.2cqw, 6.2cqw * sqrt(40 / var(--text-em, 40))); line-height: 1.35; color: transparent; overflow: hidden; }
 .art-text-panel .sj-text { background: var(--sj-text-panel) center / 100% 100% no-repeat; box-shadow: none; }
 @container (min-width: 170px) { .sj-text { color: #2b1d0c; } }
 

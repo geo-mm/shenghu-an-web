@@ -13,7 +13,8 @@ const roles = urls(import.meta.glob('./assets/art/roles/*.webp', { eager: true, 
 const ui = urls(import.meta.glob('./assets/art/ui/*.webp', { eager: true, query: '?url', import: 'default' }))
 
 export const buildingArt = (type: BuildingType): string | undefined => buildings[type]
-export const roleArt = (role: RoleId): string | undefined => roles[role]
+/** Role art; 'governor' is the start-player card, not a selectable role. */
+export const roleArt = (role: RoleId | 'governor'): string | undefined => roles[role]
 
 /** Decorative card parts; each one replaces its CSS fallback when present. */
 export const UI_PARTS = ['frame', 'card-back', 'ribbon', 'medallion', 'vp-badge', 'text-panel'] as const

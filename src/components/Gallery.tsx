@@ -39,6 +39,10 @@ export function Gallery() {
               <span className="small">{t.roles[r].privilege}</span>
             </div>
           ))}
+          <div className="role">
+            {roleArt('governor') && <img className="role-art" src={roleArt('governor')} alt="" />}
+            <strong>{t.governor}</strong>
+          </div>
         </div>
       </section>
     </CardInfoProvider>

@@ -50,6 +50,7 @@ const en = {
   // Board
   who: (p: string, me: boolean) => (me ? 'You' : `Player ${p}`),
   round: (n: number) => `Round ${n}`,
+  governor: 'Governor',
   governorIs: (who: string) => `Governor: ${who}`,
   governorTag: 'governor',
   stepGameOver: 'Game over',
@@ -255,6 +256,7 @@ const zhTW: Messages = {
 
   who: (p, me) => (me ? '你' : `玩家 ${p}`),
   round: (n) => `第 ${n} 回合`,
+  governor: '總督',
   governorIs: (who) => `總督：${who}`,
   governorTag: '總督',
   stepGameOver: '遊戲結束',

@@ -79,6 +79,8 @@ button.sj-card { cursor: default; }
 .sj-card.selected { outline: 3px solid var(--accent); outline-offset: 2px; }
 .sj-card.back .sj-frame { background: repeating-linear-gradient(45deg, #7a5a2e 0 4cqw, #a07a40 4cqw 8cqw); box-shadow: inset 0 0 0 3cqw #f3e6c8; }
 .art-card-back .sj-card.back .sj-frame { background: var(--sj-card-back) center / cover no-repeat; box-shadow: none; }
+/* the card back also wears the custom frame, when there is one */
+.art-card-back.art-frame .sj-card.back .sj-frame { background: var(--sj-frame) center / 100% 100% no-repeat, var(--sj-card-back) center / cover no-repeat; }
 
 /* 4:3 art window */
 .sj-art { position: absolute; top: 7cqw; left: 7cqw; right: 7cqw; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 2cqw;

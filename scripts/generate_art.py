@@ -9,6 +9,8 @@ Examples (run from the project root):
 
     # Ask the Codex CLI (`codex exec`) to create the image
     python3 scripts/generate_art.py smithy --backend codex
+    #   …if Codex's Linux sandbox can't start (bubblewrap / user namespaces):
+    python3 scripts/generate_art.py smithy --backend codex --codex-sandbox danger-full-access
 
     # Call the OpenAI Images API directly (needs OPENAI_API_KEY in the environment)
     python3 scripts/generate_art.py smithy harbor frame --backend api
@@ -138,7 +140,12 @@ def main() -> None:
     ap.add_argument("--out", default=str(ROOT / "art-src"), help="output folder (default: art-src/)")
     ap.add_argument("--model", default="gpt-image-1", help="API model (default: gpt-image-1)")
     ap.add_argument("--quality", default="medium", choices=["low", "medium", "high"], help="API quality")
-    ap.add_argument("--codex-arg", action="append", default=[], help="extra argument passed to `codex exec`")
+    ap.add_argument(
+        "--codex-sandbox",
+        choices=["read-only", "workspace-write", "danger-full-access"],
+        help="sandbox mode for `codex exec` (danger-full-access turns Codex's sandbox off)",
+    )
+    ap.add_argument("--codex-arg", action="append", default=[], help="extra argument for `codex exec`, e.g. --codex-arg=--full-auto")
     args = ap.parse_args()
 
     style, items = parse_doc(DOC.read_text(encoding="utf-8"))
@@ -151,6 +158,10 @@ def main() -> None:
     unknown = [n for n in names if n not in items]
     if unknown:
         sys.exit(f"Unknown name(s): {', '.join(unknown)}. Use --list to see them.")
+
+    codex_args = list(args.codex_arg)
+    if args.codex_sandbox:
+        codex_args = ["--sandbox", args.codex_sandbox, *codex_args]
 
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -170,7 +181,7 @@ def main() -> None:
             if args.backend == "api":
                 generate_with_api(prompt, item.size, out, args.model, args.quality)
             else:
-                generate_with_codex(prompt, item.size, out, args.codex_arg)
+                generate_with_codex(prompt, item.size, out, codex_args)
             print(f"✓ {out}")
         except RuntimeError as e:
             failed.append(name)

@@ -9,6 +9,7 @@
 1. 開一個新的 ChatGPT 對話，**先貼上「共用風格」那段**，之後每張圖只要貼「這張的描述」。
    同一個對話裡連續產生，風格會比較一致；風格跑掉時，再貼一次共用風格。
 2. 每張圖下載後，**照表格的檔名存檔**（例如 `smithy.png`），全部放在同一個資料夾。
+   想自動化的話，可以用 `scripts/generate_art.py`（見最下方「自動產生」）。
 3. 交給程式處理，兩種方式擇一：
    - 把資料夾壓縮成 zip 傳給 Claude，我會處理並更新遊戲；或
    - 自己在專案根目錄放進 `art-src/` 資料夾，執行 `npm run art`，再 commit `src/assets/art/`。
@@ -35,8 +36,9 @@ You are illustrating a fantasy card game. Keep ONE consistent art style for ever
 - Composition for building illustrations: one main building, three-quarter view from slightly above,
   centered, with breathing room around it; tiny distant townsfolk are fine, no close-up characters.
 - Never draw any text, letters, numbers, signs with writing, logos, watermarks, borders or frames.
-- Landscape 3:2 image (1536×1024). Keep everything important inside the central 4:3 area, because the
-  left and right edges will be cropped.
+- Building and character illustrations are landscape 3:2 (1536×1024): keep everything important
+  inside the central 4:3 area, because the left and right edges will be cropped. Other images use
+  the size given in their request.
 
 Reply only with the image.
 ```
@@ -145,3 +147,20 @@ No text.
 | `text-panel.png` | 橫式 1536×1024 | `An empty rectangular parchment panel with softly worn edges and a faint inner border, for card rules text (no text), centered, on a perfectly flat solid magenta #FF00FF background with no shadow.` |
 
 > 如果某個零件畫出來不好看，不放也沒關係，程式會用 CSS 畫的版本。
+
+---
+
+## 自動產生（選用）
+
+`scripts/generate_art.py` 會讀這份文件，替每個檔名組好「共用風格 + 該張描述」再送出，存到 `art-src/`：
+
+```bash
+python3 scripts/generate_art.py --list                  # 列出所有檔名
+python3 scripts/generate_art.py smithy --dry-run        # 只印出 prompt，不送出
+python3 scripts/generate_art.py smithy --backend codex  # 交給 Codex CLI（codex exec）
+python3 scripts/generate_art.py smithy --backend api    # 直接呼叫 OpenAI 圖片 API（需 OPENAI_API_KEY）
+python3 scripts/generate_art.py --all --backend api     # 全部（已存在的會跳過）
+npm run art                                             # 處理成遊戲用的圖
+```
+
+API key 只設定在自己電腦的環境變數，不要寫進任何檔案或 commit。

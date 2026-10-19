@@ -28,14 +28,21 @@
 You are illustrating a fantasy card game. Keep ONE consistent art style for every image I ask for:
 
 - Japanese anime background art for a gentle medieval-fantasy story: clean, thin line art with soft,
-  watercolor-like coloring, pastel palette, delicate light and shadow.
+  watercolor-like coloring, pastel palette, delicate light and shadow, the texture of high-quality
+  watercolor paper.
 - Setting: a sunny southern harbor town in a fantasy world — whitewashed stone and stucco walls,
   terracotta tile roofs, wooden balconies, palm trees, cypresses, flowering vines, glimpses of a
   turquoise sea, clear blue sky with soft white clouds, warm late-morning sunlight.
+- Color palette: soft sky blues, sea turquoises, warm sand colors and sun-bleached stone, accented by
+  soft bougainvillea pinks and olive greens.
 - Mood: calm, peaceful, slightly nostalgic. Clean and readable at small sizes.
 - Composition for building illustrations: one main building, three-quarter view from slightly above,
-  centered and LARGE — it should fill about 60% of the picture; tiny distant townsfolk are fine, no
-  close-up characters.
+  centered and LARGE — it should fill about 60% of the picture. Make its purpose obvious at a glance by
+  showing its signature feature prominently. Layer the scene: a few foreground plants or flowers, the
+  building in the middle ground, a simple pale background. Tiny distant townsfolk are fine, no close-up
+  characters.
+- Composition for character illustrations: one person, waist-up, facing the viewer at a slight angle,
+  with a distinctive, recognizable face and outfit; the background shows their workplace, kept soft.
 - Keep the background simple and soft: few details, slightly hazy and pale toward the edges, so the
   main building clearly stands out (the art is shown small on a card).
 - Never draw any text, letters, numbers, signs with writing, logos, watermarks, borders or frames.
@@ -111,10 +118,19 @@ Reply only with the image.
 
 ## 角色插圖（6 張，橫式 1536×1024）
 
-角色卡可以有人物。每張貼：`Character illustration (same style, one person, waist-up or full body, a matching background): <描述>`
+角色卡可以有人物。每張貼：`Character illustration (same style, one person, waist-up): <描述>`
+外貌寫得越具體（年齡、髮型、鬍子、表情、服裝），辨識度越高，重畫時也比較一致。
 
 | 檔名 | 角色 | 描述 |
 |---|---|---|
+| `role-builder.png` | 建築師 | A determined young man in his mid-20s with warm olive skin, messy dark brown curly hair tied loosely at the neck and bright green eyes, a light smudge of dust on his cheek, wearing a sturdy work apron and closely examining building plans in his hands; rising stone walls and wooden scaffolding behind him. |
+| `role-producer.png` | 製造商 | A rugged workshop owner in his late 30s with a broad build, messy blonde hair pushed back, tanned weathered skin and a focused expression, wearing rolled-up linen sleeves and a leather tool belt, checking an inventory sheet beside neatly stacked wooden crates of finished goods. |
+| `role-trader.png` | 貿易商 | A friendly, worldly merchant in his late 40s with slightly rounded cheeks, a well-groomed salt-and-pepper mustache, sharp observant eyes and an approachable smile, handing over a neatly tied wooden crate at a harbor counter; a few shining coins and a small brass scale rest on the table. |
+| `role-councillor.png` | 議員 | A distinguished man in his 50s with silver-streaked dark hair combed back, a trim goatee and sharp intelligent eyes, wearing rich velvet robes and signing parchment documents with a quill at a polished wooden desk; a window shows a sunny town square. |
+| `role-prospector.png` | 礦工 | A tough, weathered adventurer in his early 30s with short reddish-brown hair, a thick stubble beard and a warm rugged smile, wearing a sturdy travel jacket and a heavy backpack, a pickaxe over his shoulder, looking out over a wide sunlit valley and the sea. |
+| `role-governor.png` | 總督 | An elegant, authoritative town governor in his late 40s with sharp features, neat black hair and an aristocratic posture, wearing formal embroidered attire with a decorative mantle, standing on a white stone balcony above the harbor with colorful flags fluttering in the wind. |
+
+---|---|---|
 | `role-builder.png` | 建築師 | A young builder in a work apron studying building plans in front of rising stone walls and scaffolding. |
 | `role-producer.png` | 製造商 | A workshop owner in rolled-up sleeves checking a list beside crates of finished goods. |
 | `role-trader.png` | 貿易商 | A friendly merchant handing over a crate of goods at a harbor counter, coins on the table. |

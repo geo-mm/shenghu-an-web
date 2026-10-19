@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react'
-import { CUSTOMS_PRICE, GOODS, ROLES, cardDef, goodPrice, type BuildingType, type CardId, type RoleId, type SoldGood } from '../game/cards'
+import { createPortal } from 'react-dom'
+import { CUSTOMS_PRICE, GOODS, HIDDEN_CARD, ROLES, cardDef, goodPrice, type BuildingType, type CardId, type RoleId, type SoldGood } from '../game/cards'
 import {
   buildCost,
   canUseBank,
@@ -35,53 +36,87 @@ function useWho(me: PlayerID) {
   return (p: PlayerID) => t.who(p, p === me)
 }
 
+/** Where the other players sit, in play order after me (like a mahjong table: the next player is on my right). */
+const SEATS: Record<number, Seat[]> = { 1: ['top'], 2: ['right', 'left'], 3: ['right', 'top', 'left'] }
+type Seat = 'top' | 'left' | 'right'
+
+/**
+ * The whole game on one screen, laid out like a card table: opponents around
+ * the edge, roles and status in the middle, the action panel and log at the
+ * side, and my buildings and hand along the bottom.
+ */
 export function Board({ state, playerID, players, moves }: Props) {
-  const { t } = useI18n()
-  const who = useWho(playerID)
   const { G, ctx } = state
-  const opponents = ctx.playOrder.filter((p) => p !== playerID)
+  const order = ctx.playOrder
+  const me = order.indexOf(playerID)
+  const others = [...order.slice(me + 1), ...order.slice(0, me)]
+  const seats = SEATS[others.length] ?? []
   const online = (p: PlayerID) => players.find((m) => String(m.id) === p)?.isConnected ?? false
+  // MyArea and RolePanel render their controls into the action box (portal), so selections live next to the cards.
+  const [actionBox, setActionBox] = useState<HTMLDivElement | null>(null)
 
   return (
     <CardInfoProvider>
-      <section className="board" data-testid="board">
-        <StatusBar G={G} playerID={playerID} />
+      <section className={`board table seats-${others.length}`} data-testid="board">
+        {others.map((p, i) => (
+          <OpponentSeat key={p} G={G} p={p} me={playerID} seat={seats[i]} online={online(p)} />
+        ))}
 
-        {G.step.kind === 'gameOver' && <ScoreTable G={G} playerID={playerID} />}
-
-        {/* Keyed by state so a pending (unconfirmed) role choice resets after every move. */}
-        <RolePanel key={`roles-${state._stateID}`} G={G} playerID={playerID} onChoose={(r) => moves.chooseRole(r)} />
-
-        <div className="opponents">
-          {opponents.map((p) => (
-            <div key={p} className="panel area" data-testid={`area-${p}`}>
-              <h3>
-                {who(p)} {G.governor === p && <span className="tag">{t.governorTag}</span>}
-                {!online(p) && <span className="warn"> · {t.offline}</span>}
-              </h3>
-              <p className="muted small">
-                {t.inHand(G.players[p].hand.length)}
-                {storedText(t, G.players[p]) && ` · ${storedText(t, G.players[p])}`}
-                {' · '}
-                {t.buildingsCount(G.players[p].buildings.length)}
-              </p>
-              <div className="cards-row">
-                {G.players[p].buildings.map((b, i) => (
-                  <CardView key={i} id={b.card} hasGood={b.good !== null} />
-                ))}
-              </div>
-            </div>
-          ))}
+        <div className="table-center">
+          <StatusBar G={G} playerID={playerID} />
+          {G.step.kind === 'gameOver' ? (
+            <ScoreTable G={G} playerID={playerID} />
+          ) : (
+            // Keyed by state so a pending (unconfirmed) role choice resets after every move.
+            <RolePanel key={`roles-${state._stateID}`} G={G} playerID={playerID} actionBox={actionBox} onChoose={(r) => moves.chooseRole(r)} />
+          )}
         </div>
 
+        <aside className="table-side">
+          <div className="action-box" ref={setActionBox} />
+          <Log G={G} playerID={playerID} />
+        </aside>
+
         {/* Remount on every state change so selections reset after each move. */}
-        <MyArea key={`mine-${state._stateID}`} G={G} ctx={ctx} playerID={playerID} moves={moves} />
-
-        <p className="muted small">{t.cardHint}</p>
-
-        <Log G={G} playerID={playerID} />
+        <MyArea key={`mine-${state._stateID}`} G={G} ctx={ctx} playerID={playerID} moves={moves} actionBox={actionBox} />
       </section>
     </CardInfoProvider>
+  )
+}
+
+/** A row of cards that overlap just enough to fit their container, like a hand of mahjong tiles. */
+function Fan({ n, className = '', children, ...rest }: { n: number; className?: string; children: ReactNode; 'data-testid'?: string }) {
+  return (
+    <div className={`fan ${className}`} style={{ '--n': Math.max(n, 1) } as React.CSSProperties} {...rest}>
+      {children}
+    </div>
+  )
+}
+
+function OpponentSeat({ G, p, me, seat, online }: { G: SanJuanState; p: PlayerID; me: PlayerID; seat: Seat; online: boolean }) {
+  const { t } = useI18n()
+  const who = useWho(me)
+  const pl = G.players[p]
+  const stored = storedText(t, pl)
+  return (
+    <div className={`seat seat-${seat} ${G.actor === p && G.step.kind !== 'gameOver' ? 'acting' : ''}`} data-testid={`area-${p}`}>
+      <div className="seat-info">
+        <strong>{who(p)}</strong>
+        {G.governor === p && <span className="tag">{t.governorTag}</span>}
+        {!online && <span className="warn small">{t.offline}</span>}
+        <span className="seat-hand" title={t.inHand(pl.hand.length)}>
+          <CardView id={HIDDEN_CARD} />
+          <span>×{pl.hand.length}</span>
+        </span>
+        <span className="muted small">{t.buildingsCount(pl.buildings.length)}</span>
+        {stored && <span className="muted small">{stored}</span>}
+      </div>
+      <Fan n={pl.buildings.length} className="seat-buildings">
+        {pl.buildings.map((b, i) => (
+          <CardView key={i} id={b.card} hasGood={b.good !== null} />
+        ))}
+      </Fan>
+    </div>
   )
 }
 
@@ -113,7 +148,14 @@ function StatusBar({ G, playerID }: { G: SanJuanState; playerID: PlayerID }) {
   )
 }
 
-function RolePanel({ G, playerID, onChoose }: { G: SanJuanState; playerID: PlayerID; onChoose: (r: RoleId) => void }) {
+interface RolePanelProps {
+  G: SanJuanState
+  playerID: PlayerID
+  actionBox: HTMLElement | null
+  onChoose: (r: RoleId) => void
+}
+
+function RolePanel({ G, playerID, actionBox, onChoose }: RolePanelProps) {
   const { t } = useI18n()
   const [picked, setPicked] = useState<RoleId | null>(null)
   const canChoose = G.step.kind === 'chooseRole' && G.actor === playerID
@@ -135,30 +177,33 @@ function RolePanel({ G, playerID, onChoose }: { G: SanJuanState; playerID: Playe
             >
               {roleArt(r) && <img className="role-art" src={roleArt(r)} alt="" draggable={false} />}
               <strong>{t.roles[r].name}</strong>
-              <span className="small">{t.roles[r].privilege}</span>
+              <span className="small role-privilege">{t.roles[r].privilege}</span>
             </button>
           )
         })}
       </div>
-      {canChoose && (
-        <div className="panel role-confirm">
-          {picked === null ? (
-            <p className="muted">{t.chooseRolePrompt}</p>
-          ) : (
-            <>
-              <p>
-                <strong>{t.roles[picked].name}</strong> — {t.roleSummary(t.roles[picked].action, t.roles[picked].privilege)}
-              </p>
-              <div className="actions">
-                <button className="primary" data-testid="confirm-role" onClick={() => onChoose(picked)}>
-                  {t.confirmRole(t.roles[picked].name)}
-                </button>
-                <button onClick={() => setPicked(null)}>{t.cancel}</button>
-              </div>
-            </>
-          )}
-        </div>
-      )}
+      {canChoose &&
+        actionBox &&
+        createPortal(
+          <div className="role-confirm">
+            {picked === null ? (
+              <p className="muted">{t.chooseRolePrompt}</p>
+            ) : (
+              <>
+                <p>
+                  <strong>{t.roles[picked].name}</strong> — {t.roleSummary(t.roles[picked].action, t.roles[picked].privilege)}
+                </p>
+                <div className="actions">
+                  <button className="primary" data-testid="confirm-role" onClick={() => onChoose(picked)}>
+                    {t.confirmRole(t.roles[picked].name)}
+                  </button>
+                  <button onClick={() => setPicked(null)}>{t.cancel}</button>
+                </div>
+              </>
+            )}
+          </div>,
+          actionBox,
+        )}
     </div>
   )
 }
@@ -168,10 +213,12 @@ interface MyAreaProps {
   ctx: ClientState['ctx']
   playerID: PlayerID
   moves: Moves
+  actionBox: HTMLElement | null
 }
 
-/** My buildings, hand and the controls for whatever I must decide now. */
-function MyArea({ G, ctx, playerID, moves }: MyAreaProps) {
+/** My buildings and hand along the bottom, plus the controls for whatever I must decide now (in the action box). */
+function MyArea({ G, ctx, playerID, moves, actionBox }: MyAreaProps) {
+  const who = useWho(playerID)
   const { t } = useI18n()
   const cardName = (c: CardId) => t.cards[cardDef(c).type][0]
   const me = G.players[playerID]
@@ -356,7 +403,7 @@ function MyArea({ G, ctx, playerID, moves }: MyAreaProps) {
     panel = (
       <>
         <p>{t.councilPrompt(me.pending.length, need, archive)}</p>
-        <div className="cards-row">
+        <Fan n={me.pending.length} className="pending">
           {me.pending.map((c) => (
             <CardView
               key={c}
@@ -366,7 +413,7 @@ function MyArea({ G, ctx, playerID, moves }: MyAreaProps) {
               onClick={() => setPendSel(toggle(pendSel, c))}
             />
           ))}
-        </div>
+        </Fan>
         <div className="actions">
           <button className="primary" disabled={pendSel.length !== need} onClick={() => moves.councilDiscard(pendSel)}>
             {t.confirm}
@@ -374,8 +421,14 @@ function MyArea({ G, ctx, playerID, moves }: MyAreaProps) {
         </div>
       </>
     )
-  } else if (G.step.kind === 'role' && G.step.role === 'trader' && G.tradeTile !== null) {
-    panel = <TradeTile tile={G.tradeTile} t={t} />
+  } else if (G.step.kind !== 'gameOver' && !myTurn) {
+    panel = (
+      <>
+        {G.step.kind === 'role' && G.step.role === 'trader' && G.tradeTile !== null && <TradeTile tile={G.tradeTile} t={t} />}
+        <p className="muted">{t.waitingFor(who(G.actor))}</p>
+        <p className="muted small">{t.cardHint}</p>
+      </>
+    )
   }
 
   const handTag = (c: CardId) => {
@@ -388,15 +441,15 @@ function MyArea({ G, ctx, playerID, moves }: MyAreaProps) {
   const buildingTag = mode === 'producer' ? t.tags.produce : mode === 'trader' ? t.tags.sell : t.tags.pay
 
   return (
-    <div className={`panel area mine-area ${G.actor === playerID ? 'my-turn' : ''}`} data-testid={`area-${playerID}`}>
-      <h3>
-        {t.youPlayer(playerID)} {G.governor === playerID && <span className="tag">{t.governorTag}</span>}
-        {storedText(t, me) && <span className="muted small"> · {storedText(t, me)}</span>}
-      </h3>
-      {panel && <div className="action-panel">{panel}</div>}
-
-      <h4>{t.buildingsTitle(me.buildings.length)}</h4>
-      <div className="cards-row" data-testid="my-buildings">
+    <div className={`seat seat-me ${myTurn && step.kind !== 'gameOver' ? 'acting' : ''}`} data-testid={`area-${playerID}`}>
+      {panel && actionBox && createPortal(<div className="action-panel">{panel}</div>, actionBox)}
+      <div className="seat-info">
+        <strong>{t.youPlayer(playerID)}</strong>
+        {G.governor === playerID && <span className="tag">{t.governorTag}</span>}
+        <span className="muted small">{t.buildingsTitle(me.buildings.length)}</span>
+        {storedText(t, me) && <span className="muted small">{storedText(t, me)}</span>}
+      </div>
+      <Fan n={me.buildings.length} className="my-buildings" data-testid="my-buildings">
         {me.buildings.map((b, i) => (
           <CardView
             key={i}
@@ -407,10 +460,9 @@ function MyArea({ G, ctx, playerID, moves }: MyAreaProps) {
             onClick={buildingClickable(i) ? () => setBldSel(toggle(bldSel, i)) : undefined}
           />
         ))}
-      </div>
+      </Fan>
 
-      <h4>{t.handTitle(me.hand.length)}</h4>
-      <div className="cards-row" data-testid="my-hand">
+      <Fan n={me.hand.length} className="hand" data-testid="my-hand">
         {me.hand.map((c) => (
           <CardView
             key={c}
@@ -421,7 +473,7 @@ function MyArea({ G, ctx, playerID, moves }: MyAreaProps) {
           />
         ))}
         {me.hand.length === 0 && <span className="muted">{t.noCards}</span>}
-      </div>
+      </Fan>
     </div>
   )
 }
@@ -450,8 +502,8 @@ function Log({ G, playerID }: { G: SanJuanState; playerID: PlayerID }) {
   }
   const entries = G.log.slice(-40).reverse()
   return (
-    <details className="panel log" open>
-      <summary>{t.gameLog}</summary>
+    <div className="panel log">
+      <h3>{t.gameLog}</h3>
       <ol reversed>
         {entries.map((e, i) => (
           <li key={i}>
@@ -459,7 +511,7 @@ function Log({ G, playerID }: { G: SanJuanState; playerID: PlayerID }) {
           </li>
         ))}
       </ol>
-    </details>
+    </div>
   )
 }
 

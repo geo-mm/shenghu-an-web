@@ -4,6 +4,7 @@ import { Lobby, normalizeToken } from './components/Lobby'
 import { ConnectionStatus, type LinkStatus } from './components/ConnectionStatus'
 import { Board } from './components/Board'
 import { Gallery } from './components/Gallery'
+import { DemoTable } from './components/DemoTable'
 import { GUEST_PLAYER_ID, HOST_PLAYER_ID, useP2PMatch, type MatchConfig } from './hooks/useP2PMatch'
 import { useI18n } from './i18n/I18n'
 import { LANGS, type Lang } from './i18n/messages'
@@ -20,6 +21,11 @@ export default function App() {
   )
 
   const showGallery = useMemo(() => new URLSearchParams(window.location.search).has('gallery'), [])
+  const demo = useMemo(() => {
+    const params = new URLSearchParams(window.location.search)
+    const n = Number(params.get('demo'))
+    return params.has('demo') ? { numPlayers: n >= 2 && n <= 4 ? n : 2, expansion: params.has('expansion'), auto: params.has('auto') } : null
+  }, [])
   const myPlayerID = config?.role === 'host' ? HOST_PLAYER_ID : GUEST_PLAYER_ID
   const allConnected = players.length > 0 && players.every((p) => p.isConnected)
 
@@ -41,7 +47,7 @@ export default function App() {
   const inviteLink = config ? `${location.origin}${location.pathname}?join=${config.token}` : ''
 
   return (
-    <main className="app">
+    <main className={`app ${(gameStarted && state) || demo ? 'in-game' : ''}`}>
       <header className="app-header">
         <h1>{t.appTitle}</h1>
         <div className="header-actions">
@@ -64,12 +70,14 @@ export default function App() {
         </div>
       </header>
 
-      {showGallery && !config && <Gallery />}
-      {!showGallery && !config && <Lobby onStart={setConfig} initialJoinToken={initialJoinToken} />}
+      {demo && !config && <DemoTable {...demo} />}
+      {showGallery && !demo && !config && <Gallery />}
+      {!showGallery && !demo && !config && <Lobby onStart={setConfig} initialJoinToken={initialJoinToken} />}
 
       {config && (
         <>
-          <ConnectionStatus status={status} config={config} players={players} myPlayerID={myPlayerID} />
+          {/* During the game, seats show who is offline instead. */}
+          {!gameStarted && <ConnectionStatus status={status} config={config} players={players} myPlayerID={myPlayerID} />}
 
           {error && (
             <p className="error" role="alert">

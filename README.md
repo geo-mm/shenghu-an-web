@@ -36,6 +36,10 @@ incognito window, two different browsers, or a computer and a phone. Host in one
 token (or invite link) in the other, then take turns pressing *Draw Card* and check both screens
 show the same hands, turn number and state ID.
 
+To check the table layout without a second browser, open `?demo=N` (N = 2–4, add `&expansion`
+for the new buildings): you play seat 0 against simple bots, all locally. `&auto` lets a bot
+play your seat too. `?gallery` shows every card.
+
 ## How it fits together
 
 | File | Purpose |
@@ -48,7 +52,8 @@ show the same hands, turn number and state ID.
 | `src/game/engine.test.ts`, `expansion.test.ts` | Unit tests for every rule and building, plus 90 complete random 2–4 player games with and without the expansion (`npm test`). |
 | `src/hooks/useP2PMatch.ts` | Creates the boardgame.io client with `P2P({ isHost })`, exposes state, player list and connection status. |
 | `src/components/Lobby.tsx`, `ConnectionStatus.tsx` | Host / join UI and live connection status. |
-| `src/components/Board.tsx`, `CardView.tsx` | Playable board: roles, buildings, hand and per-phase controls, log, final scores. |
+| `src/components/Board.tsx`, `CardView.tsx` | The game table on one screen: opponents' seats around the edge, roles and status in the middle, the action box and log at the side, my buildings and hand (overlapping to fit) along the bottom. |
+| `src/components/DemoTable.tsx` | `?demo=N`: a local game against bots, for trying the layout with 2–4 players. |
 | `src/components/CardInfo.tsx` | Card details dialog, opened by right-click (or long-press on phones). |
 | `src/i18n/` | English / Traditional Chinese UI text, card names and effects; the choice is remembered per browser. Game logs are structured, so each player reads them in their own language. |
 

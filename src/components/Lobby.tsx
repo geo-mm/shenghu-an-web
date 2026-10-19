@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import type { MatchConfig } from '../hooks/useP2PMatch'
 import { useI18n } from '../i18n/I18n'
+import { ProfilePicker, loadProfilePref, saveProfilePref } from './Players'
 
 // No 0/O/1/I/L to keep tokens easy to read aloud and type.
 const TOKEN_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
@@ -24,6 +25,7 @@ export function Lobby({ onStart, initialJoinToken = '' }: Props) {
   const { t } = useI18n()
   const [joinToken, setJoinToken] = useState(initialJoinToken)
   const [expansion, setExpansion] = useState(false)
+  const [profile, setProfile] = useState(loadProfilePref)
   const token = normalizeToken(joinToken)
 
   const join = (e: FormEvent) => {
@@ -70,6 +72,18 @@ export function Lobby({ onStart, initialJoinToken = '' }: Props) {
             {t.joinButton}
           </button>
         </form>
+      </section>
+
+      <section className="panel profile-panel">
+        <h2>{t.profileTitle}</h2>
+        <p className="muted small">{t.profileHint}</p>
+        <ProfilePicker
+          value={profile}
+          onChange={(p) => {
+            setProfile(p)
+            saveProfilePref(p)
+          }}
+        />
       </section>
     </div>
   )

@@ -16,7 +16,9 @@ import {
 } from '../game/engine'
 import type { PlayerID, SanJuanState } from '../game/state'
 import type { ClientState, MatchPlayer } from '../hooks/useP2PMatch'
-import { playerAvatar, roleArt } from '../art'
+import { roleArt } from '../art'
+import { playerProfiles, type PlayerProfile } from '../game/players'
+import { PlayerToken, ProfilePicker, ProfilesProvider, saveProfilePref, usePlayerClass, useProfiles } from './Players'
 import { useI18n } from '../i18n/I18n'
 import type { Messages } from '../i18n/messages'
 import { CardInfoProvider } from './CardInfo'
@@ -55,51 +57,56 @@ export function Board({ state, playerID, players, moves }: Props) {
   const online = (p: PlayerID) => players.find((m) => String(m.id) === p)?.isConnected ?? false
   // MyArea and RolePanel render their controls into the action box (portal), so selections live next to the cards.
   const [actionBox, setActionBox] = useState<HTMLDivElement | null>(null)
+  const [profileOpen, setProfileOpen] = useState(false)
+  const setProfile = (profile: PlayerProfile) => {
+    saveProfilePref(profile)
+    moves.setProfile(profile)
+  }
 
   return (
     <CardInfoProvider>
-      <section className={`board table seats-${others.length}`} data-testid="board">
-        {others.map((p, i) => (
-          <OpponentSeat key={p} G={G} p={p} me={playerID} seat={seats[i]} online={online(p)} />
-        ))}
+      <ProfilesProvider value={playerProfiles(G)}>
+        <section className={`board table seats-${others.length}`} data-testid="board">
+          {others.map((p, i) => (
+            <OpponentSeat key={p} G={G} p={p} me={playerID} seat={seats[i]} online={online(p)} />
+          ))}
 
-        <div className="table-center">
-          <StatusBar G={G} playerID={playerID} />
-          {G.step.kind === 'gameOver' ? (
-            <ScoreTable G={G} playerID={playerID} />
-          ) : (
-            // Keyed by state so a pending (unconfirmed) role choice resets after every move.
-            <RolePanel key={`roles-${state._stateID}`} G={G} playerID={playerID} actionBox={actionBox} onChoose={(r) => moves.chooseRole(r)} />
-          )}
-        </div>
+          <div className="table-center">
+            <StatusBar G={G} playerID={playerID} />
+            {G.step.kind === 'gameOver' ? (
+              <ScoreTable G={G} playerID={playerID} />
+            ) : (
+              // Keyed by state so a pending (unconfirmed) role choice resets after every move.
+              <RolePanel key={`roles-${state._stateID}`} G={G} playerID={playerID} actionBox={actionBox} onChoose={(r) => moves.chooseRole(r)} />
+            )}
+          </div>
 
-        <aside className="table-side">
-          <div className="action-box" ref={setActionBox} />
-          <Log G={G} playerID={playerID} />
-        </aside>
+          <aside className="table-side">
+            <div className="action-box" ref={setActionBox} />
+            <Log G={G} playerID={playerID} />
+          </aside>
 
-        {/* Remount on every state change so selections reset after each move. */}
-        <MyArea key={`mine-${state._stateID}`} G={G} ctx={ctx} playerID={playerID} moves={moves} actionBox={actionBox} />
-      </section>
+          {/* Remount on every state change so selections reset after each move. */}
+          <MyArea
+            key={`mine-${state._stateID}`}
+            G={G}
+            ctx={ctx}
+            playerID={playerID}
+            moves={moves}
+            actionBox={actionBox}
+            profileOpen={profileOpen}
+            setProfileOpen={setProfileOpen}
+            onProfile={setProfile}
+          />
+        </section>
+      </ProfilesProvider>
     </CardInfoProvider>
-  )
-}
-
-/** Each player's colour (and avatar slot) follows their player number, so everyone sees the same colours. */
-const pc = (p: PlayerID) => `pc-${Number(p) % 4}`
-
-/** A small round token in the player's colour: their avatar if there is one, else their number. */
-function PlayerToken({ p }: { p: PlayerID }) {
-  const avatar = playerAvatar(Number(p) % 4)
-  return (
-    <span className={`ptoken ${pc(p)}`} aria-hidden>
-      {avatar ? <img src={avatar} alt="" draggable={false} /> : p}
-    </span>
   )
 }
 
 function PlayerName({ p, me }: { p: PlayerID; me: PlayerID }) {
   const who = useWho(me)
+  const pc = usePlayerClass()
   return (
     <span className={`pname ${pc(p)}`}>
       <PlayerToken p={p} />
@@ -119,6 +126,7 @@ function Fan({ n, className = '', children, ...rest }: { n: number; className?: 
 
 function OpponentSeat({ G, p, me, seat, online }: { G: SanJuanState; p: PlayerID; me: PlayerID; seat: Seat; online: boolean }) {
   const { t } = useI18n()
+  const pc = usePlayerClass()
   const pl = G.players[p]
   const stored = storedText(t, pl)
   return (
@@ -181,6 +189,7 @@ interface RolePanelProps {
 function RolePanel({ G, playerID, actionBox, onChoose }: RolePanelProps) {
   const { t } = useI18n()
   const who = useWho(playerID)
+  const pc = usePlayerClass()
   const [picked, setPicked] = useState<RoleId | null>(null)
   const canChoose = G.step.kind === 'chooseRole' && G.actor === playerID
   const active = G.step.kind === 'role' ? G.step.role : null
@@ -245,11 +254,16 @@ interface MyAreaProps {
   playerID: PlayerID
   moves: Moves
   actionBox: HTMLElement | null
+  profileOpen: boolean
+  setProfileOpen: (open: boolean) => void
+  onProfile: (profile: PlayerProfile) => void
 }
 
 /** My buildings and hand along the bottom, plus the controls for whatever I must decide now (in the action box). */
-function MyArea({ G, ctx, playerID, moves, actionBox }: MyAreaProps) {
+function MyArea({ G, ctx, playerID, moves, actionBox, profileOpen, setProfileOpen, onProfile }: MyAreaProps) {
   const who = useWho(playerID)
+  const pc = usePlayerClass()
+  const profiles = useProfiles()
   const { t } = useI18n()
   const cardName = (c: CardId) => t.cards[cardDef(c).type][0]
   const me = G.players[playerID]
@@ -492,10 +506,27 @@ function MyArea({ G, ctx, playerID, moves, actionBox }: MyAreaProps) {
     <div className={`seat seat-me ${pc(playerID)} ${myTurn && step.kind !== 'gameOver' ? 'acting' : ''}`} data-testid={`area-${playerID}`}>
       {panel && actionBox && createPortal(<div className="action-panel">{panel}</div>, actionBox)}
       <div className="seat-info">
-        <span className={`pname ${pc(playerID)}`}>
+        <button
+          type="button"
+          className={`pname profile-btn ${pc(playerID)}`}
+          aria-expanded={profileOpen}
+          title={t.changeProfile}
+          data-testid="profile-btn"
+          onClick={() => setProfileOpen(!profileOpen)}
+        >
           <PlayerToken p={playerID} />
           {t.youPlayer(playerID)}
-        </span>
+          <span aria-hidden>▾</span>
+        </button>
+        {profileOpen && (
+          <div className="profile-popover">
+            <ProfilePicker
+              value={profiles[playerID]}
+              taken={Object.entries(profiles).flatMap(([q, pr]) => (q === playerID ? [] : [pr.color]))}
+              onChange={onProfile}
+            />
+          </div>
+        )}
         {G.governor === playerID && <span className="tag">{t.governorTag}</span>}
         <span className="muted small">{t.buildingsTitle(me.buildings.length)}</span>
         {storedText(t, me) && <span className="muted small">{storedText(t, me)}</span>}
@@ -545,6 +576,7 @@ function TradeTile({ tile, t, customs }: { tile: number; t: Messages; customs?: 
 function Log({ G, playerID }: { G: SanJuanState; playerID: PlayerID }) {
   const { t } = useI18n()
   const who = useWho(playerID)
+  const pc = usePlayerClass()
   const helpers = {
     card: (b: BuildingType) => t.cards[b][0],
     good: (g: SoldGood) => t.goods[g],

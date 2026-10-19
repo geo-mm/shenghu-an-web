@@ -11,11 +11,11 @@
  *   <building>.png       e.g. smithy.png      → 4:3 card art
  *   role-<role>.png      e.g. role-trader.png → 4:3 role art
  *   card-back.png                             → 2:3 card back
- *   player-<0-3>.png     e.g. player-0.png   → square player avatar
+ *   icon-<icon>.png      e.g. icon-anchor.png → player icon (magenta background, keyed out)
  *   frame.png, ribbon.png, medallion.png, vp-badge.png, text-panel.png
  *                        → decorative parts drawn on a flat magenta (#FF00FF)
  *                          background, which is made transparent here
- * Output goes to src/assets/art/{buildings,roles,ui,avatars}/*.webp.
+ * Output goes to src/assets/art/{buildings,roles,ui,icons}/*.webp.
  */
 import { mkdir, readdir, readFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
@@ -32,6 +32,8 @@ const outDir = path.join(root, 'src/assets/art')
 const cardsTs = await readFile(path.join(root, 'src/game/cards.ts'), 'utf8')
 const BUILDINGS = [...cardsTs.matchAll(/^\s+(\w+): \{ type: '(\w+)'/gm)].map((m) => m[2])
 const ROLES = ['builder', 'producer', 'trader', 'councillor', 'prospector', 'governor']
+const playersTs = await readFile(path.join(root, 'src/game/players.ts'), 'utf8')
+const ICONS = [...playersTs.match(/PLAYER_ICONS = \[([^\]]*)\]/)[1].matchAll(/'(\w+)'/g)].map((m) => m[1])
 const KEYED_PARTS = ['frame', 'ribbon', 'medallion', 'vp-badge', 'text-panel']
 
 /** Centre-crops to the aspect ratio, then resizes. */
@@ -70,7 +72,7 @@ if (files.length === 0) {
   console.error(`No images found in ${srcDir}`)
   process.exit(1)
 }
-for (const sub of ['buildings', 'roles', 'ui', 'avatars']) await mkdir(path.join(outDir, sub), { recursive: true })
+for (const sub of ['buildings', 'roles', 'ui', 'icons']) await mkdir(path.join(outDir, sub), { recursive: true })
 
 const done = new Set()
 const unknown = []
@@ -87,8 +89,8 @@ for (const file of files.sort()) {
     await cropTo(input, 640, 480, path.join(outDir, 'buildings', `${name}.webp`))
   } else if (name.startsWith('role-') && ROLES.includes(name.slice(5))) {
     await cropTo(input, 640, 480, path.join(outDir, 'roles', `${name.slice(5)}.webp`))
-  } else if (/^player-[0-3]$/.test(name)) {
-    await sharp(input).rotate().resize(256, 256, { fit: 'cover', position: 'attention' }).webp({ quality: 85 }).toFile(path.join(outDir, 'avatars', `${name}.webp`))
+  } else if (name.startsWith('icon-') && ICONS.includes(name.slice(5))) {
+    await chromaKey(input, 256, path.join(outDir, 'icons', `${name.slice(5)}.webp`))
   } else if (name === 'card-back') {
     await cropTo(input, 480, 720, path.join(outDir, 'ui', 'card-back.webp'))
   } else if (KEYED_PARTS.includes(name)) {
@@ -102,7 +104,7 @@ for (const file of files.sort()) {
   console.log(`✓ ${file}`)
 }
 
-const expected = [...BUILDINGS, ...ROLES.map((r) => `role-${r}`), 'card-back', ...KEYED_PARTS, ...[0, 1, 2, 3].map((n) => `player-${n}`)]
+const expected = [...BUILDINGS, ...ROLES.map((r) => `role-${r}`), 'card-back', ...KEYED_PARTS, ...ICONS.map((i) => `icon-${i}`)]
 const missing = expected.filter((n) => !done.has(n) && !existsSync(path.join(outDir, artPath(n))))
 if (unknown.length) console.warn(`\n⚠ Unrecognised file names (skipped): ${unknown.join(', ')}`)
 console.log(`\nProcessed ${done.size} image(s). Still missing ${missing.length}: ${missing.join(', ') || '—'}`)
@@ -110,6 +112,6 @@ console.log(`\nProcessed ${done.size} image(s). Still missing ${missing.length}:
 function artPath(n) {
   if (BUILDINGS.includes(n)) return `buildings/${n}.webp`
   if (n.startsWith('role-')) return `roles/${n.slice(5)}.webp`
-  if (n.startsWith('player-')) return `avatars/${n}.webp`
+  if (n.startsWith('icon-')) return `icons/${n.slice(5)}.webp`
   return `ui/${n}.webp`
 }

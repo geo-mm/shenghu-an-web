@@ -105,14 +105,35 @@ footer { margin-top: auto; }
 .roles { padding-top: 12px; }
 
 /* Player colours (by player number) and tokens */
-.pc-0 { --pc: #0b7285; }
-.pc-1 { --pc: #c92a2a; }
-.pc-2 { --pc: #e67700; }
-.pc-3 { --pc: #2b8a3e; }
+/* keep in sync with PLAYER_COLORS in src/game/players.ts */
+.pc-teal { --pc: #0b7285; }
+.pc-crimson { --pc: #c92a2a; }
+.pc-amber { --pc: #e67700; }
+.pc-green { --pc: #2b8a3e; }
+.pc-blue { --pc: #1c5fbf; }
+.pc-purple { --pc: #7b3fb5; }
+.pc-pink { --pc: #c2255c; }
+.pc-brown { --pc: #7a5230; }
 .ptoken { display: inline-grid; place-items: center; flex: none; width: 1.7em; height: 1.7em; border-radius: 50%; overflow: hidden;
   background: var(--pc); color: #fff; font-size: 0.8em; font-weight: 700; line-height: 1; vertical-align: middle;
   box-shadow: 0 0 0 2px var(--panel), 0 0 0 3px var(--pc); }
-.ptoken img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ptoken img { width: 86%; height: 86%; object-fit: contain; display: block; }
+.ptoken-glyph { font-size: 1.05em; line-height: 1; filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.5)); }
+
+/* colour and icon picker (lobby, and from my token during the game) */
+.profile-picker { display: flex; flex-direction: column; gap: 10px; }
+.picker-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.swatch { width: 32px; height: 32px; padding: 0; border-radius: 50%; background: var(--pc); border: 3px solid var(--panel);
+  box-shadow: 0 0 0 1px var(--border); }
+.swatch.on { box-shadow: 0 0 0 3px var(--text); }
+.swatch:disabled { opacity: 0.25; background-image: linear-gradient(135deg, transparent 45%, var(--panel) 45% 55%, transparent 55%); }
+.icon-choice { padding: 3px; border-radius: 50%; font-size: 1.3rem; line-height: 0; background: none; }
+.icon-choice.on { box-shadow: 0 0 0 3px var(--text); }
+.profile-btn { white-space: nowrap; padding: 2px 6px 2px 2px; border-radius: 999px; background: none; border: 1px dashed transparent; font: inherit; font-weight: 700; }
+.profile-btn:hover, .profile-btn[aria-expanded='true'] { border-color: var(--pc); }
+.seat-me { position: relative; }
+.profile-popover { position: absolute; left: 8px; bottom: calc(100% + 6px); z-index: 20; width: min(420px, calc(100vw - 32px));
+  background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 12px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25); }
 .pname { display: inline-flex; align-items: center; gap: 0.4em; color: var(--pc); font-weight: 700; }
 .role-privilege { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
 .action-box { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; flex: 0 1 auto; min-height: 0; overflow: auto; }
@@ -262,3 +283,6 @@ select { font: inherit; padding: 4px 8px; border-radius: 6px; border: 1px solid 
 .role-art { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 6px; margin-bottom: 4px; }
 .gallery-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
 .gallery-cards { gap: 10px; margin-bottom: 12px; }
+.profile-panel { grid-column: 1 / -1; }
+.expansion-option input { flex: none; }
+.seat-me .seat-info { max-width: none; }

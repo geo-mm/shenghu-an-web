@@ -173,18 +173,22 @@ No text.
 
 ---
 
-## 玩家徽章（4 張，正方形 1024×1024，選用）
+## 玩家圖示（8 張，正方形 1024×1024，選用）
 
-每位玩家固定一個顏色，畫面上的座位、選過的角色卡、紀錄裡的名字都會用這個顏色。
-徽章會縮得很小（約 24～40px）並裁成圓形，所以每張只畫**一個簡單、輪廓清楚的圖案**，主色要跟玩家顏色一致。
-沒有徽章時，程式會畫一個有編號的彩色圓點。
+玩家可以從 8 種顏色、8 種圖示中各選一個（顏色不能重複）。圖示會疊在玩家選的顏色圓盤上，
+並縮得很小（約 24～40px），所以每張只畫**一個簡單、輪廓清楚的圖案**，用米白＋金色（任何底色上都看得清楚），
+背景跟裝飾零件一樣是**純洋紅色 `#FF00FF`**，程式會把它變透明。沒有圖時，程式會用表情符號代替。
 
-| 檔名 | 玩家顏色 | 貼給 ChatGPT |
+| 檔名 | 圖案 | 貼給 ChatGPT |
 |---|---|---|
-| `player-0.png` | 青綠 | `A round heraldic emblem (same style) filling the whole square: a golden ship's anchor on a deep teal (#0b7285) disc with a thin gold rim, bold simple shapes that stay readable when very small. No text.` |
-| `player-1.png` | 緋紅 | `A round heraldic emblem (same style) filling the whole square: a small golden sailing ship on a crimson red (#c92a2a) disc with a thin gold rim, bold simple shapes that stay readable when very small. No text.` |
-| `player-2.png` | 琥珀橘 | `A round heraldic emblem (same style) filling the whole square: a radiant golden-white sun on an amber orange (#e67700) disc with a thin gold rim, bold simple shapes that stay readable when very small. No text.` |
-| `player-3.png` | 橄欖綠 | `A round heraldic emblem (same style) filling the whole square: a golden olive branch on a deep green (#2b8a3e) disc with a thin gold rim, bold simple shapes that stay readable when very small. No text.` |
+| `icon-anchor.png` | 船錨 | `A single bold icon of a ship's anchor (same style), cream-white with gold highlights and a dark brown outline, flat and simple so it stays readable at 24 pixels, centered and filling about 70% of the image, on a perfectly flat solid magenta #FF00FF background with no shadow. No text.` |
+| `icon-ship.png` | 帆船 | `A single bold icon of a small sailing ship with two sails (same style), cream-white with gold highlights and a dark brown outline, flat and simple so it stays readable at 24 pixels, centered and filling about 70% of the image, on a perfectly flat solid magenta #FF00FF background with no shadow. No text.` |
+| `icon-sun.png` | 太陽 | `A single bold icon of a radiant sun with straight rays (same style), cream-white with gold highlights and a dark brown outline, flat and simple so it stays readable at 24 pixels, centered and filling about 70% of the image, on a perfectly flat solid magenta #FF00FF background with no shadow. No text.` |
+| `icon-olive.png` | 橄欖枝 | `A single bold icon of an olive branch with a few leaves and two olives (same style), cream-white with gold highlights and a dark brown outline, flat and simple so it stays readable at 24 pixels, centered and filling about 70% of the image, on a perfectly flat solid magenta #FF00FF background with no shadow. No text.` |
+| `icon-compass.png` | 羅盤 | `A single bold icon of a compass rose with four long points (same style), cream-white with gold highlights and a dark brown outline, flat and simple so it stays readable at 24 pixels, centered and filling about 70% of the image, on a perfectly flat solid magenta #FF00FF background with no shadow. No text.` |
+| `icon-key.png` | 鑰匙 | `A single bold icon of an old ornate key (same style), cream-white with gold highlights and a dark brown outline, flat and simple so it stays readable at 24 pixels, centered and filling about 70% of the image, on a perfectly flat solid magenta #FF00FF background with no shadow. No text.` |
+| `icon-crown.png` | 王冠 | `A single bold icon of a simple three-pointed crown (same style), cream-white with gold highlights and a dark brown outline, flat and simple so it stays readable at 24 pixels, centered and filling about 70% of the image, on a perfectly flat solid magenta #FF00FF background with no shadow. No text.` |
+| `icon-fish.png` | 魚 | `A single bold icon of a leaping fish (same style), cream-white with gold highlights and a dark brown outline, flat and simple so it stays readable at 24 pixels, centered and filling about 70% of the image, on a perfectly flat solid magenta #FF00FF background with no shadow. No text.` |
 
 ---
 

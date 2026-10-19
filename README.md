@@ -48,6 +48,7 @@ play your seat too. `?gallery` shows every card.
 | `src/game/state.ts` | Game state types (`SanJuanState`, players, step machine, scores). |
 | `src/game/engine.ts` | The rules: pure functions for every decision (`act*`), automatic flow (`advance`), costs/limits and scoring. |
 | `src/game/SanJuanGame.ts` | boardgame.io wrapper: moves (host-only, `client: false`), turn order follows `G.actor`, `playerView` hides secret cards. |
+| `src/game/players.ts` | Player colours and icons: choices, defaults, the unique-colour rule (`setProfile` may be sent at any time). |
 | `src/game/bot.ts` | Lists legal actions; used by tests to play full random games (and a future AI). |
 | `src/game/engine.test.ts`, `expansion.test.ts` | Unit tests for every rule and building, plus 90 complete random 2–4 player games with and without the expansion (`npm test`). |
 | `src/hooks/useP2PMatch.ts` | Creates the boardgame.io client with `P2P({ isHost })`, exposes state, player list and connection status. |
@@ -107,9 +108,10 @@ VP badge). Artwork is optional and added one image at a time: prompts for ChatGP
 (git-ignored) and run `npm run art`, which crops, compresses and keys out the magenta backgrounds
 into `src/assets/art/`. Missing images fall back to the CSS-drawn card.
 
-Each player has a fixed colour by player number (teal, crimson, amber, green), used for their
-seat, their name in the log and the badge on roles they chose this round. Optional emblems
-`player-0.png` … `player-3.png` replace the numbered tokens.
+Each player picks one of 8 colours (unique per game) and 8 icons, in the lobby or during the game
+by clicking their own token; the choice is remembered per browser and sent when the game starts.
+The colour marks their seat, their name in the log and the badge on roles they chose this round.
+Optional icon art `icon-anchor.png` … `icon-fish.png` (magenta background) replaces the emoji glyphs.
 
 ## Signaling
 

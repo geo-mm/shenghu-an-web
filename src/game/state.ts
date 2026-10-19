@@ -1,3 +1,4 @@
+import type { PlayerProfile } from './players'
 import type { BuildingType, CardId, GoodType, RoleId, SoldGood } from './cards'
 
 export type PlayerID = string
@@ -86,6 +87,8 @@ export interface SanJuanState {
   /** Players still to pick a role this round, in order. */
   pickers: PlayerID[]
   rolesTaken: RoleId[]
+  /** Colours and icons players picked (see players.ts for the defaults). */
+  profiles: Record<PlayerID, PlayerProfile>
   /** Who chose each role taken this round. */
   roleChoosers: Partial<Record<RoleId, PlayerID>>
   step: Step

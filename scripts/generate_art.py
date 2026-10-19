@@ -75,7 +75,7 @@ def parse_doc(text: str) -> tuple[str, dict[str, Item]]:
                 f"Character illustration (same style, one person, waist-up): {last}",
                 LANDSCAPE,
             )
-        elif section.startswith("## 玩家徽章"):
+        elif section.startswith("## 玩家圖示"):
             items[name] = Item(name, last, SQUARE)
         elif section.startswith("## 裝飾零件"):
             size = PORTRAIT if "直式" in second else SQUARE if "正方形" in second else LANDSCAPE

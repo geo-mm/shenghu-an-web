@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 import { Lobby, normalizeToken } from './components/Lobby'
 import { ConnectionStatus, type LinkStatus } from './components/ConnectionStatus'
 import { Board } from './components/Board'
 import { Gallery } from './components/Gallery'
 import { DemoTable } from './components/DemoTable'
+import { loadProfilePref } from './components/Players'
 import { GUEST_PLAYER_ID, HOST_PLAYER_ID, useP2PMatch, type MatchConfig } from './hooks/useP2PMatch'
 import { useI18n } from './i18n/I18n'
 import { LANGS, type Lang } from './i18n/messages'
@@ -33,6 +34,16 @@ export default function App() {
   // drops, so a reconnect resumes the same view. (State adjusted during render.)
   if (config && allConnected && startedToken !== config.token) setStartedToken(config.token)
   const gameStarted = config !== null && startedToken === config.token
+
+  // Once the game is up, send the colour and icon picked in the lobby (once per game).
+  const sentProfile = useRef<string | null>(null)
+  useEffect(() => {
+    const pref = loadProfilePref()
+    if (!gameStarted || !state || !client || !config || !pref || sentProfile.current === config.token) return
+    sentProfile.current = config.token
+    const mine = state.G.profiles?.[myPlayerID]
+    if (mine?.color !== pref.color || mine?.icon !== pref.icon) client.moves.setProfile(pref)
+  }, [gameStarted, state, client, config, myPlayerID])
 
   let status: LinkStatus = 'connecting'
   if (error) status = 'error'

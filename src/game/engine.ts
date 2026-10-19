@@ -287,6 +287,7 @@ export function createInitialState(ctx: EngineCtx, rng: Rng, options: GameOption
     pickers: pickOrder(ctx, governor),
     rolesTaken: [],
     roleChoosers: {},
+    profiles: {},
     // No governor phase in round 1: nobody can be over the limit or own a chapel.
     step: { kind: 'chooseRole' },
     actor: governor,

@@ -1,3 +1,4 @@
+import type { PlayerColor, PlayerIcon } from '../game/players'
 import type { BuildingType, RoleId, SoldGood } from '../game/cards'
 import type { PlacementError } from '../game/engine'
 import type { LogEvent } from '../game/state'
@@ -24,6 +25,14 @@ const en = {
   hostTitle: 'Host a game',
   hostHint: 'Creates a room in this browser. Share the token with your opponent.',
   expansionOption: 'Include the “New Buildings” expansion',
+  profileTitle: 'Your colour & icon',
+  profileHint: 'Everyone sees you in this colour. If another player already has it, you keep a free colour and can change it during the game by clicking your token.',
+  changeProfile: 'Change your colour or icon',
+  colorLabel: 'Colour',
+  iconLabel: 'Icon',
+  colorTaken: (color: string) => `${color} (taken)`,
+  colorNames: { teal: 'Teal', crimson: 'Crimson', amber: 'Amber', green: 'Green', blue: 'Blue', purple: 'Purple', pink: 'Pink', brown: 'Brown' } as Record<PlayerColor, string>,
+  iconNames: { anchor: 'Anchor', ship: 'Ship', sun: 'Sun', olive: 'Olive branch', compass: 'Compass', key: 'Key', crown: 'Crown', fish: 'Fish' } as Record<PlayerIcon, string>,
   hostButton: 'Host Game',
   joinTitle: 'Join a game',
   joinPlaceholder: 'Room token, e.g. K7PX2M',
@@ -237,6 +246,14 @@ const zhTW: Messages = {
   hostTitle: '建立遊戲',
   hostHint: '在這個瀏覽器開一個房間，把代碼分享給對手。',
   expansionOption: '加入「新建築」擴充',
+  profileTitle: '你的顏色與圖示',
+  profileHint: '其他玩家會用這個顏色看到你。如果顏色已經被別人選走，會先給你一個沒人用的顏色，遊戲中點自己的圖示可以再換。',
+  changeProfile: '更換顏色或圖示',
+  colorLabel: '顏色',
+  iconLabel: '圖示',
+  colorTaken: (color) => `${color}（已被選走）`,
+  colorNames: { teal: '青綠', crimson: '緋紅', amber: '琥珀橘', green: '橄欖綠', blue: '海藍', purple: '紫', pink: '玫瑰粉', brown: '棕' },
+  iconNames: { anchor: '船錨', ship: '帆船', sun: '太陽', olive: '橄欖枝', compass: '羅盤', key: '鑰匙', crown: '王冠', fish: '魚' },
   hostButton: '建立遊戲',
   joinTitle: '加入遊戲',
   joinPlaceholder: '房間代碼，例如 K7PX2M',

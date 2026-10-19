@@ -1,5 +1,5 @@
 import type { Game, LongFormMove, MoveFn } from 'boardgame.io'
-import { INVALID_MOVE } from 'boardgame.io/core'
+import { ActivePlayers } from 'boardgame.io/core'
 import { HIDDEN_CARD, type CardId, type RoleId } from './cards'
 import {
   actBuild,
@@ -15,13 +15,26 @@ import {
   type BuildAction,
   type GameOptions,
 } from './engine'
+import { actSetProfile } from './players'
 import type { SanJuanState } from './state'
 
 /**
  * Wraps an engine action as a boardgame.io move. All moves run only on the
  * host (`client: false`): they draw from the hidden deck, which clients never see.
+ *
+ * Invalid moves are ignored rather than returning INVALID_MOVE: boardgame.io
+ * then broadcasts a state that still carries plugin functions, which the P2P
+ * transport can't serialise. So each action first runs on a copy to check it.
  */
 type MoveContext = Parameters<MoveFn<SanJuanState>>[0]
+
+function rejected(args: MoveContext, check: (trial: MoveContext) => string | null): boolean {
+  // The state is plain JSON; the trial keeps the order when shuffling, so it uses no randomness.
+  const trial = { ...args, G: JSON.parse(JSON.stringify(args.G)), random: { ...args.random, Shuffle: <T,>(a: T[]) => [...a] } }
+  const err = check(trial)
+  if (err) console.warn(`Ignored move by player ${args.playerID}: ${err}`)
+  return err !== null
+}
 
 function move<A extends unknown[]>(
   act: (args: MoveContext, player: string, ...a: A) => string | null,
@@ -30,11 +43,8 @@ function move<A extends unknown[]>(
     client: false,
     move: ((args: MoveContext, ...a: A) => {
       const { G, ctx, playerID, random, events } = args
-      const err = act(args, playerID, ...a)
-      if (err) {
-        console.warn(`Invalid move by player ${playerID}: ${err}`)
-        return INVALID_MOVE
-      }
+      if (rejected(args, (trial) => act(trial, playerID, ...a))) return
+      act(args, playerID, ...a)
       advance(G, ctx, random)
       if (G.step.kind === 'gameOver') events.endGame({ winners: G.winners, scores: G.scores })
       else events.endTurn()
@@ -59,6 +69,9 @@ export function createSanJuanGame(options: GameOptions = {}): Game<SanJuanState>
 
   // Whoever must decide next (G.actor) gets the turn.
   turn: {
+    // Everyone may send moves at any time (to change their colour/icon); the engine
+    // still only accepts game actions from G.actor.
+    activePlayers: ActivePlayers.ALL,
     order: {
       first: ({ G, ctx }) => ctx.playOrder.indexOf(G.actor),
       next: ({ G, ctx }) => ctx.playOrder.indexOf(G.actor),
@@ -76,6 +89,13 @@ export function createSanJuanGame(options: GameOptions = {}): Game<SanJuanState>
     sell: move(({ G, ctx, random }, p, indexes: number[]) => actSell(G, ctx, random, p, indexes)),
     councilDiscard: move(({ G }, p, discards: CardId[]) => actCouncil(G, p, discards)),
     pass: move(({ G }, p) => actPass(G, p)),
+    // Not a game action: no turn ends and nothing advances.
+    setProfile: {
+      client: false,
+      move: ((args: MoveContext, profile: unknown) => {
+        if (!rejected(args, (trial) => actSetProfile(trial.G, args.playerID, profile))) actSetProfile(args.G, args.playerID, profile)
+      }) as MoveFn<SanJuanState>,
+    },
   },
 
   /** Hide the deck, discard pile, goods and other players' hands, chapel and drawn cards. */

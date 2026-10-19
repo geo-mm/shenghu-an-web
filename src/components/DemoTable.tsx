@@ -5,6 +5,7 @@ import { createSanJuanGame } from '../game/SanJuanGame'
 import { legalActions } from '../game/bot'
 import type { ClientState, MatchPlayer } from '../hooks/useP2PMatch'
 import { Board } from './Board'
+import { loadProfilePref } from './Players'
 
 const BOT_DELAY_MS = 500
 
@@ -23,6 +24,8 @@ export function DemoTable({ numPlayers, expansion, auto }: { numPlayers: number;
 
   useEffect(() => {
     clients.forEach((c) => c.start())
+    const pref = loadProfilePref()
+    if (pref) clients[0].moves.setProfile(pref)
     const unsubscribe = clients[0].subscribe((s) => s && setState(s))
     // Each bot moves a moment after it becomes its turn.
     let rng = 12345

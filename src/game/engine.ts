@@ -94,16 +94,27 @@ function markLibraryUse(G: SanJuanState, ctx: EngineCtx, p: PlayerID, factor: nu
  * Builder privilege, smithy, quarry and crane are applied; never below 0.
  */
 export function buildCost(G: SanJuanState, ctx: EngineCtx, p: PlayerID, card: CardId, replace: number | null = null): number {
+  const discount = buildDiscounts(G, ctx, p, card, replace).reduce((sum, d) => sum + d.amount, 0)
+  return Math.max(0, cardDef(card).cost - discount)
+}
+
+/** Where a build discount comes from: the builder privilege, a building, or the building replaced by the crane. */
+export type DiscountSource = 'privilege' | 'smithy' | 'quarry' | 'crane'
+
+/** Each discount that applies when `p` builds `card` (see buildCost), for showing how the cost adds up. */
+export function buildDiscounts(G: SanJuanState, ctx: EngineCtx, p: PlayerID, card: CardId, replace: number | null = null) {
   const player = G.players[p]
   const def = cardDef(card)
-  let discount = privilege(G, ctx, p)
-  if (def.kind === 'production' && owns(player, 'smithy')) discount += 1
-  if (def.kind === 'violet' && owns(player, 'quarry')) discount += 1
+  const discounts: { source: DiscountSource; amount: number }[] = []
+  const priv = privilege(G, ctx, p)
+  if (priv > 0) discounts.push({ source: 'privilege', amount: priv })
+  if (def.kind === 'production' && owns(player, 'smithy')) discounts.push({ source: 'smithy', amount: 1 })
+  if (def.kind === 'violet' && owns(player, 'quarry')) discounts.push({ source: 'quarry', amount: 1 })
   if (replace !== null) {
     const old = cardDef(player.buildings[replace].card)
-    discount += old.type === 'park' ? PARK_DISCOUNT : old.cost
+    discounts.push({ source: 'crane', amount: old.type === 'park' ? PARK_DISCOUNT : old.cost })
   }
-  return Math.max(0, def.cost - discount)
+  return discounts
 }
 
 export type PlacementError = 'needCrane' | 'noSuchBuilding' | 'maxBuildings' | 'violetUnique'

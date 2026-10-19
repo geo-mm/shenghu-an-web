@@ -11,6 +11,7 @@ import {
   actSell,
   advance,
   buildCost,
+  buildDiscounts,
   countAllCards,
   createInitialState,
   scorePlayer,
@@ -69,6 +70,13 @@ describe('builder', () => {
     expect(buildCost(G, ctx2, '0', hero)).toBe(2) // doubled privilege
     // Crane over the indigo plant (cost 1): 5 - 2 (library privilege) - 1 (smithy) - 1 = 1.
     expect(buildCost(G, ctx2, '0', silver, 0)).toBe(1)
+    // The breakdown shown to players lists each discount; the non-chooser gets none.
+    expect(buildDiscounts(G, ctx2, '0', silver, 0)).toEqual([
+      { source: 'privilege', amount: 2 },
+      { source: 'smithy', amount: 1 },
+      { source: 'crane', amount: 1 },
+    ])
+    expect(buildDiscounts(G, ctx2, '1', silver)).toEqual([])
   })
 
   it('builds, pays, and triggers poor house and carpenter', () => {

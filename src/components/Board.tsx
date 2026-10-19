@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { CUSTOMS_PRICE, GOODS, HIDDEN_CARD, ROLES, cardDef, goodPrice, type BuildingType, type CardId, type RoleId, type SoldGood } from '../game/cards'
 import {
   buildCost,
+  buildDiscounts,
   canUseBank,
   councilDiscardCount,
   needsOfficeSwap,
@@ -337,6 +338,7 @@ function MyArea({ G, ctx, playerID, moves, actionBox }: MyAreaProps) {
     const goods = bldSel
     const placeErr = target === null ? null : placementError(me, target, replace)
     const cost = target === null ? 0 : buildCost(G, ctx, playerID, target, replace)
+    const discounts = target === null ? [] : buildDiscounts(G, ctx, playerID, target, replace)
     const paid = handSel.length + goods.length
     panel = (
       <>
@@ -344,6 +346,22 @@ function MyArea({ G, ctx, playerID, moves, actionBox }: MyAreaProps) {
           {target === null ? t.buildPick : t.buildPay(cardName(target), cost, paid)}
           {maxGoodsPayment(me) > 0 && t.blackMarketHint}
         </p>
+        {target !== null && discounts.length > 0 && (
+          <p className="muted small" data-testid="cost-breakdown">
+            {t.costBreakdown(
+              cardDef(target).cost,
+              discounts.map((d) =>
+                d.source === 'privilege'
+                  ? t.discountPrivilege(d.amount)
+                  : d.source === 'crane'
+                    ? t.discountCrane(d.amount)
+                    : t.discountBuilding(d.amount, t.cards[d.source][0]),
+              ),
+              cost,
+            )}
+          </p>
+        )}
+        {step.kind === 'role' && step.chooser !== playerID && <p className="muted small">{t.noPrivilege(who(step.chooser))}</p>}
         {owns(me, 'crane') && (
           <label>
             {t.craneLabel}{' '}

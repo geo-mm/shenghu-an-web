@@ -130,14 +130,6 @@ Reply only with the image.
 | `role-prospector.png` | 礦工 | A tough, weathered adventurer in his early 30s with short reddish-brown hair, a thick stubble beard and a warm rugged smile, wearing a sturdy travel jacket and a heavy backpack, a pickaxe over his shoulder, looking out over a wide sunlit valley and the sea. |
 | `role-governor.png` | 總督 | An elegant, authoritative town governor in his late 40s with sharp features, neat black hair and an aristocratic posture, wearing formal embroidered attire with a decorative mantle, standing on a white stone balcony above the harbor with colorful flags fluttering in the wind. |
 
----|---|---|
-| `role-builder.png` | 建築師 | A young builder in a work apron studying building plans in front of rising stone walls and scaffolding. |
-| `role-producer.png` | 製造商 | A workshop owner in rolled-up sleeves checking a list beside crates of finished goods. |
-| `role-trader.png` | 貿易商 | A friendly merchant handing over a crate of goods at a harbor counter, coins on the table. |
-| `role-councillor.png` | 議員 | A town councillor in a fine coat signing documents at a desk, a window showing the town square. |
-| `role-prospector.png` | 礦工 | An adventurer with a backpack and a pickaxe looking out over a valley and the sea, seen from behind. |
-| `role-governor.png` | 總督 | The town governor in elegant robes standing on a balcony above the harbor, flags in the wind. |
-
 ---
 
 ## 卡背（1 張，直式 1024×1536）

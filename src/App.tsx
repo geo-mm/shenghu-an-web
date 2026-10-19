@@ -3,6 +3,7 @@ import './App.css'
 import { Lobby, normalizeToken } from './components/Lobby'
 import { ConnectionStatus, type LinkStatus } from './components/ConnectionStatus'
 import { Board } from './components/Board'
+import { Gallery } from './components/Gallery'
 import { GUEST_PLAYER_ID, HOST_PLAYER_ID, useP2PMatch, type MatchConfig } from './hooks/useP2PMatch'
 import { useI18n } from './i18n/I18n'
 import { LANGS, type Lang } from './i18n/messages'
@@ -18,6 +19,7 @@ export default function App() {
     [],
   )
 
+  const showGallery = useMemo(() => new URLSearchParams(window.location.search).has('gallery'), [])
   const myPlayerID = config?.role === 'host' ? HOST_PLAYER_ID : GUEST_PLAYER_ID
   const allConnected = players.length > 0 && players.every((p) => p.isConnected)
 
@@ -62,7 +64,8 @@ export default function App() {
         </div>
       </header>
 
-      {!config && <Lobby onStart={setConfig} initialJoinToken={initialJoinToken} />}
+      {showGallery && !config && <Gallery />}
+      {!showGallery && !config && <Lobby onStart={setConfig} initialJoinToken={initialJoinToken} />}
 
       {config && (
         <>

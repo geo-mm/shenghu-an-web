@@ -34,7 +34,10 @@ You are illustrating a fantasy card game. Keep ONE consistent art style for ever
   turquoise sea, clear blue sky with soft white clouds, warm late-morning sunlight.
 - Mood: calm, peaceful, slightly nostalgic. Clean and readable at small sizes.
 - Composition for building illustrations: one main building, three-quarter view from slightly above,
-  centered, with breathing room around it; tiny distant townsfolk are fine, no close-up characters.
+  centered and LARGE — it should fill about 60% of the picture; tiny distant townsfolk are fine, no
+  close-up characters.
+- Keep the background simple and soft: few details, slightly hazy and pale toward the edges, so the
+  main building clearly stands out (the art is shown small on a card).
 - Never draw any text, letters, numbers, signs with writing, logos, watermarks, borders or frames.
 - Building and character illustrations are landscape 3:2 (1536×1024): keep everything important
   inside the central 4:3 area, because the left and right edges will be cropped. Other images use

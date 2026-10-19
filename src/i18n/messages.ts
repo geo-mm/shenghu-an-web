@@ -60,6 +60,9 @@ const en = {
   waitingFor: (who: string) => `Waiting for ${who}…`,
   yourMove: 'Your move!',
   cardHint: 'Tip: right-click (or long-press) any card to see what it does.',
+  galleryTitle: 'Card gallery',
+  galleryLarge: 'Large cards',
+  galleryRoles: 'Roles',
 
   roleSummary: (action: string, privilege: string) => `Action: ${action} Privilege: ${privilege}`,
   chooseRolePrompt: 'Click a role to see it, then confirm.',
@@ -262,6 +265,9 @@ const zhTW: Messages = {
   waitingFor: (who) => `等待${who}…`,
   yourMove: '輪到你了！',
   cardHint: '提示：在任何卡牌上按滑鼠右鍵（手機長按）可查看卡牌說明。',
+  galleryTitle: '卡牌圖鑑',
+  galleryLarge: '大卡片',
+  galleryRoles: '職業',
 
   roleSummary: (action, privilege) => `行動：${action}特權：${privilege}`,
   chooseRolePrompt: '點選一個角色查看說明，再按確認。',

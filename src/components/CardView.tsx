@@ -66,7 +66,15 @@ export function CardView({ id, selected, tag, hasGood, onClick, disabled, width 
     <>
       <span className="sj-frame" aria-hidden />
       <div className="sj-art">
-        {art ? <img src={art} alt="" draggable={false} loading="lazy" /> : <span className="sj-art-ph" aria-hidden />}
+        {art ? (
+          <>
+            {/* Blurred copy behind, sharp copy fading out from the centre: keeps busy backgrounds calm. */}
+            <img className="sj-art-bg" src={art} alt="" draggable={false} loading="lazy" />
+            <img className="sj-art-fg" src={art} alt="" draggable={false} loading="lazy" />
+          </>
+        ) : (
+          <span className="sj-art-ph" aria-hidden />
+        )}
       </div>
       <span className="sj-cost left" title={t.cost}>
         {def.cost}

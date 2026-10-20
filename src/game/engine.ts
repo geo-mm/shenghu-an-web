@@ -307,7 +307,8 @@ export function createInitialState(ctx: EngineCtx, rng: Rng, options: GameOption
     scores: null,
     winners: null,
   }
-  log(G, { key: 'roundStart', governor })
+  // Round 1: say that the first governor was drawn at random.
+  log(G, { key: 'firstGovernor', governor })
   return G
 }
 

@@ -42,7 +42,7 @@ export type Step =
 
 /** Structured log entry, translated by the UI (see src/i18n). */
 export type LogEvent =
-  | { key: 'roundStart'; governor: PlayerID }
+  | { key: 'roundStart' | 'firstGovernor'; governor: PlayerID }
   | { key: 'cannotBuild' | 'noEmptyProduction' | 'noGoods' | 'chapelTuck' | 'pass' }
   | { key: 'poorHouseDraw' | 'carpenterDraw' | 'wellDraw' | 'tavernDraw' | 'hutDraw' | 'customsGood' | 'harborStore' }
   | { key: 'bankDeposit' | 'officeSwap'; n: number }

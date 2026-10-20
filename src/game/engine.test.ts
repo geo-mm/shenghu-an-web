@@ -50,6 +50,14 @@ describe('setup', () => {
   })
 })
 
+describe('first governor', () => {
+  it('is drawn at random and logged as such', () => {
+    const G = createInitialState(ctx2, { Shuffle: (a) => [...a].reverse() })
+    expect(G.governor).toBe('1')
+    expect(G.log[0]).toEqual({ key: 'firstGovernor', governor: '1', round: 1 })
+  })
+})
+
 describe('builder', () => {
   it('applies privilege, smithy, quarry, library and crane discounts', () => {
     const G = createInitialState(ctx2, identity)

@@ -284,6 +284,7 @@ const en = {
     const list = (xs: string[]) => xs.join(', ')
     switch (e.key) {
       case 'roundStart': return `New round — governor: ${t.who(e.governor)}.`
+      case 'firstGovernor': return `First governor, drawn at random: ${t.who(e.governor)}.`
       case 'cannotBuild': return 'cannot build anything.'
       case 'noEmptyProduction': return 'has no empty production building.'
       case 'noGoods': return 'has no goods to sell.'
@@ -581,6 +582,7 @@ const zhTW: Messages = {
     const list = (xs: string[]) => xs.join('、')
     switch (e.key) {
       case 'roundStart': return `新回合開始，${zj(t.who(e.governor), '擔任總督。')}`
+      case 'firstGovernor': return `隨機抽出起始總督：${t.who(e.governor)}。`
       case 'cannotBuild': return '沒有可以建造的建築。'
       case 'noEmptyProduction': return '沒有空的生產建築。'
       case 'noGoods': return '沒有貨物可賣。'

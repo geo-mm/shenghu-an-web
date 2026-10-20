@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { Client } from 'boardgame.io/client'
 import { Local } from 'boardgame.io/multiplayer'
 import { createInitialState } from './engine'
-import { actSetProfile, playerProfiles } from './players'
+import { actSetProfile, cleanName, playerProfiles } from './players'
 import { createSanJuanGame } from './SanJuanGame'
 import { ctx2, identity } from './testUtils'
 
@@ -50,5 +50,20 @@ describe('player colours and icons', () => {
     expect(c0.getState()!.G.profiles[other.playerID!]).toEqual({ color: 'pink', icon: 'fish' })
     c0.stop()
     c1.stop()
+  })
+
+  it('stores a cleaned-up name', () => {
+    expect(cleanName('  小明  ')).toBe('小明')
+    expect(cleanName('a\u0000b\nc')).toBe('abc')
+    expect(cleanName('一二三四五六七八九十一二三四五六七八')).toBe('一二三四五六七八九十一二三四五六')
+    expect(cleanName('   ')).toBeUndefined()
+    expect(cleanName(42)).toBeUndefined()
+
+    const G = createInitialState(ctx2, identity)
+    expect(actSetProfile(G, '0', { color: 'teal', icon: 'anchor', name: '  船長 ' })).toBeNull()
+    expect(playerProfiles(G)['0']).toEqual({ color: 'teal', icon: 'anchor', name: '船長' })
+    expect(actSetProfile(G, '0', { color: 'teal', icon: 'anchor', name: '' })).toBeNull()
+    expect(playerProfiles(G)['0'].name).toBeUndefined()
+    expect(actSetProfile(G, '0', { color: 'teal', icon: 'anchor', name: 7 })).toMatch(/Unknown/)
   })
 })

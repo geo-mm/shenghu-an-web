@@ -47,7 +47,7 @@ export default function App() {
     if (!state || !client || !config || !pref || sentProfile.current === config.token) return
     sentProfile.current = config.token
     const mine = state.G.profiles?.[myPlayerID]
-    if (mine?.color !== pref.color || mine?.icon !== pref.icon) client.moves.setProfile(pref)
+    if (mine?.color !== pref.color || mine?.icon !== pref.icon || mine?.name !== pref.name) client.moves.setProfile(pref)
   }, [state, client, config, myPlayerID])
 
   // Host: when a computer player is to act, ask the game to play its move (after a short pause to follow along).

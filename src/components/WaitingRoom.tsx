@@ -1,10 +1,9 @@
 import { BOT_LEVELS, type BotLevel } from '../game/ai'
 import { HOST_SEAT } from '../game/SanJuanGame'
-import { playerProfiles } from '../game/players'
 import type { SanJuanState } from '../game/state'
 import type { MatchPlayer } from '../hooks/useP2PMatch'
 import { useI18n } from '../i18n/I18n'
-import { PlayerToken, ProfilesProvider } from './Players'
+import { PlayerToken, PlayersProvider, usePlayerName } from './Players'
 
 interface Props {
   G: SanJuanState
@@ -17,14 +16,23 @@ interface Props {
  * Before the game: the room's seats. Friends who join take a free seat; the
  * host can put the computer in empty seats and starts as soon as 2+ are filled.
  */
-export function WaitingRoom({ G, players, playerID, moves }: Props) {
+export function WaitingRoom(props: Props) {
+  return (
+    <PlayersProvider G={props.G}>
+      <Room {...props} />
+    </PlayersProvider>
+  )
+}
+
+function Room({ G, players, playerID, moves }: Props) {
+  const name = usePlayerName()
   const { t } = useI18n()
   const isHost = playerID === HOST_SEAT
   const humans = players.filter((p) => p.isConnected).map((p) => String(p.id))
   const seated = [...new Set([...humans, ...G.bots])]
 
   return (
-    <ProfilesProvider value={playerProfiles(G)}>
+    <>
       <section className="panel waiting-room" data-testid="waiting-room">
         <h2>{t.seatsTitle}</h2>
         <ul className="seat-list">
@@ -36,7 +44,7 @@ export function WaitingRoom({ G, players, playerID, moves }: Props) {
               <li key={seat} className={`seat-row ${human || bot ? 'filled' : 'empty'}`} data-testid={`seat-${seat}`}>
                 {human || bot ? <PlayerToken p={seat} /> : <span className="ptoken empty" aria-hidden />}
                 <span className="seat-name">
-                  {human ? t.who(seat, seat === playerID) : bot ? t.botName(seat) : t.seatEmpty}
+                  {human || bot ? name(seat, playerID) : t.seatEmpty}
                 </span>
                 {seat === HOST_SEAT && <span className="tag">{t.hostLabel}</span>}
                 {bot && <span className="tag bot-tag">AI</span>}
@@ -83,6 +91,6 @@ export function WaitingRoom({ G, players, playerID, moves }: Props) {
           <p className="muted">{t.waitingForHost}</p>
         )}
       </section>
-    </ProfilesProvider>
+    </>
   )
 }

@@ -19,8 +19,8 @@ import {
 import type { PlayerID, SanJuanState } from '../game/state'
 import type { ClientState, MatchPlayer } from '../hooks/useP2PMatch'
 import { roleArt } from '../art'
-import { playerProfiles, type PlayerProfile } from '../game/players'
-import { PlayerToken, ProfilePicker, ProfilesProvider, saveProfilePref, usePlayerClass, useProfiles } from './Players'
+import type { PlayerProfile } from '../game/players'
+import { PlayerToken, PlayersProvider, ProfilePicker, saveProfilePref, usePlayerClass, usePlayerName, useProfiles } from './Players'
 import { PhaseHints, useCombos, useHints, useRoleHint } from './Hints'
 import { useI18n } from '../i18n/I18n'
 import type { Messages } from '../i18n/messages'
@@ -40,8 +40,8 @@ interface Props {
 
 /** Translates a player ID relative to me ("You" / "Player 1"). */
 function useWho(me: PlayerID) {
-  const { t } = useI18n()
-  return (p: PlayerID) => t.who(p, p === me)
+  const name = usePlayerName()
+  return (p: PlayerID) => name(p, me)
 }
 
 /** Where the other players sit, in play order after me (like a mahjong table: the next player is on my right). */
@@ -98,7 +98,7 @@ export function Board({ state, playerID, players, moves, onLeave }: Props) {
 
   return (
     <CardInfoProvider extra={comboInfo}>
-      <ProfilesProvider value={playerProfiles(G)}>
+      <PlayersProvider G={G}>
         <section className={`board table seats-${others.length}`} data-testid="board">
           {others.map((p, i) => (
             <OpponentSeat key={p} G={G} p={p} me={playerID} seat={seats[i]} online={online(p)} />
@@ -168,7 +168,7 @@ export function Board({ state, playerID, players, moves, onLeave }: Props) {
             onProfile={setProfile}
           />
         </section>
-      </ProfilesProvider>
+      </PlayersProvider>
     </CardInfoProvider>
   )
 }
@@ -615,7 +615,7 @@ function MyArea({ G, ctx, playerID, moves, actionBox, sideBox, profileOpen, setP
           onClick={() => setProfileOpen(!profileOpen)}
         >
           <PlayerToken p={playerID} />
-          {t.youPlayer(playerID)}
+          {profiles[playerID]?.name ? t.youNamed(profiles[playerID].name!) : t.youPlayer(playerID)}
           <span aria-hidden>▾</span>
         </button>
         {profileOpen && (

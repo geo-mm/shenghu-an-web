@@ -1,7 +1,7 @@
-import { createContext, useContext } from 'react'
+import { createContext, useContext, useState, type ReactNode } from 'react'
 import { playerIconArt } from '../art'
-import { COLOR_IDS, PLAYER_ICONS, isPlayerProfile, type PlayerColor, type PlayerIcon, type PlayerProfile } from '../game/players'
-import type { PlayerID } from '../game/state'
+import { COLOR_IDS, MAX_NAME_LENGTH, PLAYER_ICONS, cleanName, isPlayerProfile, playerProfiles, type PlayerColor, type PlayerIcon, type PlayerProfile } from '../game/players'
+import type { PlayerID, SanJuanState } from '../game/state'
 import { useI18n } from '../i18n/I18n'
 
 /** Shown on the token until icon art (icons/<icon>.webp) is added. */
@@ -16,15 +16,30 @@ const ICON_GLYPHS: Record<PlayerIcon, string> = {
   fish: '🐟',
 }
 
-const ProfilesContext = createContext<Record<PlayerID, PlayerProfile>>({})
-/** Provides everyone's colour and icon (from playerProfiles(G)) to the tokens and colour classes below. */
-export const ProfilesProvider = ProfilesContext.Provider
+interface TablePlayers {
+  profiles: Record<PlayerID, PlayerProfile>
+  bots: PlayerID[]
+}
+const PlayersContext = createContext<TablePlayers>({ profiles: {}, bots: [] })
 
-export const useProfiles = () => useContext(ProfilesContext)
+/** Provides everyone's colour, icon and name (and who is a computer player) to the tokens, colours and names below. */
+export function PlayersProvider({ G, children }: { G: SanJuanState; children: ReactNode }) {
+  return <PlayersContext.Provider value={{ profiles: playerProfiles(G), bots: G.bots }}>{children}</PlayersContext.Provider>
+}
+
+export const useProfiles = () => useContext(PlayersContext).profiles
+
+/** How to call a player: "You" for `me`, else their chosen name, "Computer N" for bots, or "Player N". */
+export function usePlayerName() {
+  const { t } = useI18n()
+  const { profiles, bots } = useContext(PlayersContext)
+  return (p: PlayerID, me?: PlayerID) =>
+    p === me ? t.who(p, true) : profiles[p]?.name ?? (bots.includes(p) ? t.botName(p) : t.who(p, false))
+}
 
 /** Class that sets --pc to the player's colour. */
 export function usePlayerClass() {
-  const profiles = useContext(ProfilesContext)
+  const { profiles } = useContext(PlayersContext)
   return (p: PlayerID) => `pc-${profiles[p]?.color ?? COLOR_IDS[Number(p) % COLOR_IDS.length]}`
 }
 
@@ -39,7 +54,7 @@ export function Token({ profile, label }: { profile: PlayerProfile; label?: stri
 }
 
 export function PlayerToken({ p }: { p: PlayerID }) {
-  const profiles = useContext(ProfilesContext)
+  const { profiles } = useContext(PlayersContext)
   const profile = profiles[p] ?? { color: COLOR_IDS[Number(p) % COLOR_IDS.length], icon: PLAYER_ICONS[Number(p) % PLAYER_ICONS.length] }
   return <Token profile={profile} />
 }
@@ -51,12 +66,32 @@ interface PickerProps {
   onChange: (profile: PlayerProfile) => void
 }
 
-/** 8 colours and 8 icons to choose from; colours someone else has are disabled. */
+/** A name, 8 colours and 8 icons to choose from; colours someone else has are disabled. */
 export function ProfilePicker({ value, taken = [], onChange }: PickerProps) {
   const { t } = useI18n()
   const current = value ?? { color: COLOR_IDS.find((c) => !taken.includes(c))!, icon: PLAYER_ICONS[0] }
+  // The name is typed freely and saved when the field loses focus (or on Enter).
+  const [draft, setDraft] = useState(current.name ?? '')
+  const saveName = () => {
+    const name = cleanName(draft)
+    setDraft(name ?? '')
+    if (name !== current.name) onChange({ ...current, name })
+  }
   return (
     <div className="profile-picker" data-testid="profile-picker">
+      <label className="name-row">
+        <span>{t.nameLabel}</span>
+        <input
+          className="name-input"
+          value={draft}
+          maxLength={MAX_NAME_LENGTH * 2}
+          placeholder={t.namePlaceholder}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={saveName}
+          onKeyDown={(e) => e.key === 'Enter' && (e.currentTarget as HTMLInputElement).blur()}
+          data-testid="name-input"
+        />
+      </label>
       <div className="picker-row" role="radiogroup" aria-label={t.colorLabel}>
         {COLOR_IDS.map((c) => {
           const isTaken = taken.includes(c)

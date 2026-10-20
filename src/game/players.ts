@@ -1,6 +1,7 @@
 /**
- * Player colours and icons. Each player picks one of 8 colours (no two players
- * share one) and one of 8 icons; until they do, they get a default by player number.
+ * Player colours, icons and names. Each player picks one of 8 colours (no two
+ * players share one), one of 8 icons and a name; until they do, they get a
+ * default by player number.
  */
 import type { PlayerID, SanJuanState } from './state'
 
@@ -23,13 +24,27 @@ export type PlayerIcon = (typeof PLAYER_ICONS)[number]
 export interface PlayerProfile {
   color: PlayerColor
   icon: PlayerIcon
+  /** The name the player chose (none: shown as "Player N"). */
+  name?: string
+}
+
+export const MAX_NAME_LENGTH = 16
+
+/** A name as stored: no control characters, trimmed, at most MAX_NAME_LENGTH characters; empty means none. */
+export function cleanName(name: unknown): string | undefined {
+  if (typeof name !== 'string') return undefined
+  // Drop control characters (U+0000–U+001F, U+007F).
+  const visible = [...name].filter((ch) => ch.charCodeAt(0) > 0x1f && ch.charCodeAt(0) !== 0x7f).join('')
+  const trimmed = [...visible.trim()].slice(0, MAX_NAME_LENGTH).join('').trim()
+  return trimmed || undefined
 }
 
 export const isPlayerProfile = (x: unknown): x is PlayerProfile =>
   typeof x === 'object' &&
   x !== null &&
   COLOR_IDS.includes((x as PlayerProfile).color) &&
-  PLAYER_ICONS.includes((x as PlayerProfile).icon)
+  PLAYER_ICONS.includes((x as PlayerProfile).icon) &&
+  ((x as PlayerProfile).name === undefined || typeof (x as PlayerProfile).name === 'string')
 
 /**
  * Everyone's colour and icon: their own choice, or else the default for their
@@ -49,12 +64,13 @@ export function playerProfiles(G: Pick<SanJuanState, 'players' | 'profiles'>): R
   return result
 }
 
-/** Sets `p`'s colour and icon; the colour must not be anyone else's. Allowed at any time, not just on `p`'s turn. */
+/** Sets `p`'s colour, icon and name; the colour must not be anyone else's. Allowed at any time, not just on `p`'s turn. */
 export function actSetProfile(G: SanJuanState, p: PlayerID, profile: unknown): string | null {
   if (!G.players[p]) return 'Unknown player.'
-  if (!isPlayerProfile(profile)) return 'Unknown colour or icon.'
+  if (!isPlayerProfile(profile)) return 'Unknown colour, icon or name.'
   const current = playerProfiles(G)
   if (Object.entries(current).some(([q, r]) => q !== p && r.color === profile.color)) return 'That colour is taken.'
-  G.profiles[p] = { color: profile.color, icon: profile.icon }
+  const name = cleanName(profile.name)
+  G.profiles[p] = name ? { color: profile.color, icon: profile.icon, name } : { color: profile.color, icon: profile.icon }
   return null
 }

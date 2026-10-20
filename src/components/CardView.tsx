@@ -21,13 +21,15 @@ interface Props {
   disabled?: boolean
   /** Card width, e.g. "280px" (the layout scales with it; effect text shows on large cards). */
   width?: string
+  /** Combo hints: how this card works with the player's buildings (shows a badge). */
+  combos?: string[]
 }
 
 /**
  * A card laid out like the physical one: cost medallions in the top corners,
  * art, name ribbon, effect text and the VP badge at the bottom.
  */
-export function CardView({ id, selected, tag, hasGood, onClick, disabled, width }: Props) {
+export function CardView({ id, selected, tag, hasGood, onClick, disabled, width, combos }: Props) {
   const { t } = useI18n()
   const showInfo = useShowCardInfo()
   const pressTimer = useRef<number | undefined>(undefined)
@@ -52,7 +54,7 @@ export function CardView({ id, selected, tag, hasGood, onClick, disabled, width 
   const className = `sj-card c-${color} ${selected ? 'selected' : ''} ${onClick && !disabled ? 'clickable' : ''}`
 
   const handlers = {
-    title: `${name} — ${text}`,
+    title: [`${name} — ${text}`, ...(combos ?? []).map((c) => `✦ ${c}`)].join('\n'),
     'data-card': def.type,
     onContextMenu: (e: React.MouseEvent) => {
       // Right-click (and long-press on Android) opens the card details.
@@ -106,6 +108,11 @@ export function CardView({ id, selected, tag, hasGood, onClick, disabled, width 
         </span>
       )}
       {tag && <span className="sj-tag">{tag}</span>}
+      {combos && combos.length > 0 && (
+        <span className="sj-combo" data-testid="combo-badge">
+          ✦ {t.comboBadge}
+        </span>
+      )}
     </>
   )
 

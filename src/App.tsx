@@ -5,6 +5,8 @@ import { ConnectionStatus, type LinkStatus } from './components/ConnectionStatus
 import { Board } from './components/Board'
 import { Gallery } from './components/Gallery'
 import { DemoTable } from './components/DemoTable'
+import { isBotLevel } from './game/ai'
+import { HintsToggle } from './components/Hints'
 import { loadProfilePref } from './components/Players'
 import { WaitingRoom } from './components/WaitingRoom'
 import { HOST_PLAYER_ID, useP2PMatch, type MatchConfig } from './hooks/useP2PMatch'
@@ -27,7 +29,10 @@ export default function App() {
   const demo = useMemo(() => {
     const params = new URLSearchParams(window.location.search)
     const n = Number(params.get('demo'))
-    return params.has('demo') ? { numPlayers: n >= 2 && n <= 4 ? n : 2, expansion: params.has('expansion'), auto: params.has('auto') } : null
+    const level = params.get('level')
+    return params.has('demo')
+      ? { numPlayers: n >= 2 && n <= 4 ? n : 2, expansion: params.has('expansion'), auto: params.has('auto'), level: isBotLevel(level) ? level : 'player' as const }
+      : null
   }, [])
   const myPlayerID = playerID ?? HOST_PLAYER_ID
   const isHost = config?.role === 'host'
@@ -75,6 +80,7 @@ export default function App() {
       <header className="app-header">
         <h1>{t.appTitle}</h1>
         <div className="header-actions">
+          <HintsToggle />
           <label className="lang-select">
             <span className="sr-only">{t.language}</span>
             <span aria-hidden>🌐</span>

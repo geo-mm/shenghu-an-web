@@ -1,3 +1,4 @@
+import type { BotLevel } from './ai'
 import type { PlayerProfile } from './players'
 import type { BuildingType, CardId, GoodType, RoleId, SoldGood } from './cards'
 
@@ -81,6 +82,8 @@ export interface SanJuanState {
   seats: PlayerID[]
   /** Seats played by the computer (the host's browser asks it to move). */
   bots: PlayerID[]
+  /** Each computer seat's strength. */
+  botLevels: Record<PlayerID, BotLevel>
   /** Playing with the "New Buildings" expansion. */
   expansion: boolean
   /** Goods sold so far in the current trader phase (for the hut). */

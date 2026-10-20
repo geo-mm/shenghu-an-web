@@ -1,3 +1,4 @@
+import { BOT_LEVELS, type BotLevel } from '../game/ai'
 import { HOST_SEAT } from '../game/SanJuanGame'
 import { playerProfiles } from '../game/players'
 import type { SanJuanState } from '../game/state'
@@ -39,8 +40,26 @@ export function WaitingRoom({ G, players, playerID, moves }: Props) {
                 </span>
                 {seat === HOST_SEAT && <span className="tag">{t.hostLabel}</span>}
                 {bot && <span className="tag bot-tag">AI</span>}
+                {bot &&
+                  (isHost ? (
+                    <select
+                      className="bot-level"
+                      aria-label={t.botLevelLabel}
+                      data-testid={`level-${seat}`}
+                      value={G.botLevels[seat] ?? 'player'}
+                      onChange={(e) => moves.setBot(seat, e.target.value as BotLevel)}
+                    >
+                      {BOT_LEVELS.map((l) => (
+                        <option key={l} value={l}>
+                          {t.botLevels[l]}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span className="muted small">{t.botLevels[G.botLevels[seat] ?? 'player']}</span>
+                  ))}
                 {isHost && !human && seat !== HOST_SEAT && (
-                  <button className="small-btn" data-testid={`bot-${seat}`} onClick={() => moves.setBot(seat, !bot)}>
+                  <button className="small-btn" data-testid={`bot-${seat}`} onClick={() => moves.setBot(seat, bot ? null : 'player')}>
                     {bot ? t.removeBot : t.addBot}
                   </button>
                 )}

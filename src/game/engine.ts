@@ -293,6 +293,7 @@ export function createInitialState(ctx: EngineCtx, rng: Rng, options: GameOption
     started: true,
     seats: [...ctx.playOrder],
     bots: [],
+    botLevels: {},
     rolesTaken: [],
     roleChoosers: {},
     profiles: {},

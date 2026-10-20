@@ -1,3 +1,5 @@
+import type { BotLevel } from '../game/ai'
+import type { BoostSource, ComboId } from '../game/combos'
 import type { PlayerColor, PlayerIcon } from '../game/players'
 import type { BuildingType, RoleId, SoldGood } from '../game/cards'
 import type { PlacementError } from '../game/engine'
@@ -25,6 +27,73 @@ const en = {
   hostTitle: 'Host a game',
   hostHint: 'Creates a room in this browser. Share the token with your opponent.',
   expansionOption: 'Include the “New Buildings” expansion',
+  hintsToggle: 'Combo hints',
+  hintsToggleTitle: 'Show how effects stack in each phase and which cards combo with your buildings',
+  comboBadge: 'Combo',
+  combosTitle: 'Combos with your buildings',
+  phaseHintsTitle: 'What stacks up for you',
+  boostTotal: (role: RoleId, a: number, b?: number): string =>
+    role === 'builder'
+      ? `${a} card${a === 1 ? '' : 's'} off every building`
+      : role === 'producer'
+        ? `Produce up to ${a}`
+        : role === 'trader'
+          ? `Sell up to ${a}`
+          : role === 'councillor'
+            ? `Draw ${a}, keep ${b}`
+            : `Draw ${a}`,
+  boost: (role: RoleId, source: BoostSource, n: number | undefined, name: string): string => {
+    if (source === 'base') return role === 'councillor' ? 'Base: draw 2, keep 1' : `Base: ${role === 'producer' ? 'produce' : 'sell'} 1`
+    if (source === 'privilege') return role === 'councillor' ? `Privilege: draw ${n} more` : role === 'builder' ? `Privilege: ${n} card cheaper` : `Privilege: +${n}`
+    if (source === 'library') return `${name}: privilege doubled`
+    const text: Partial<Record<BoostSource, string>> = {
+      smithy: 'production buildings 1 card cheaper',
+      quarry: 'violet buildings 1 card cheaper',
+      crane: 'build over an old building and pay only the difference',
+      black_market: 'pay with up to 2 goods instead of cards',
+      poor_house: 'draw 1 if your hand is down to 0–1 cards after building',
+      carpenter: 'draw 1 after building a violet building',
+      aqueduct: '+1 good',
+      well: 'draw 1 when you produce 2 or more',
+      trading_post: '+1 good',
+      market_stand: 'draw 1 when you sell 2 or more',
+      market_hall: 'draw 1 more whenever you sell',
+      customs_office: 'its good always sells for 2',
+      harbor: 'keep 1 sold card as a point',
+      prefecture: 'keep 1 more',
+      archive: 'choose from your hand too',
+      gold_mine: 'turn up 4; all different costs → keep the cheapest',
+      goldsmith: 'turn up 1; keep it if nobody has built it',
+    }
+    return `${name}: ${text[source] ?? ''}`
+  },
+  combos: {
+    smithyProduction: 'Smithy makes every production building 1 card cheaper, on top of the builder privilege.',
+    quarryViolet: 'Quarry makes every violet building 1 card cheaper, on top of the builder privilege.',
+    carpenterViolet: 'Carpenter gives back a card for every violet building you build.',
+    quarryCarpenter: 'Quarry + carpenter: violet buildings cost 1 less and refund 1 card.',
+    libraryAqueduct: 'Library doubles the producer privilege; with the aqueduct you can produce 4 goods at once.',
+    libraryTradingPost: 'Library doubles the trader privilege; with the trading post you can sell 4 goods at once.',
+    libraryPrefecture: 'Library lets the councillor draw 8; the prefecture lets you keep 2 of them.',
+    aqueductWell: 'Aqueduct produces 1 more, which makes the well (2+ goods → draw 1) easy to trigger.',
+    tradingPostMarketStand: 'Trading post sells 1 more, which makes the market stand (2+ sold → draw 1) easy to trigger.',
+    tradingPostMarketHall: 'Trading post sells 1 more, and the market hall adds a card whenever you sell.',
+    marketStandHall: 'Market stand and market hall both trigger: selling 2+ goods draws 2 extra cards.',
+    prefectureArchive: 'Archive lets you choose from your whole hand, and the prefecture keeps 1 more.',
+    towerChapel: 'Tower raises your hand limit to 12, so you can tuck a card under the chapel every round.',
+    towerPrefecture: 'Tower lets you hold on to the extra cards the prefecture keeps.',
+    blackMarketProduction: 'Black market pays with goods instead of cards: more production buildings, more money.',
+    craneCost6: 'Crane can upgrade an old building into a cost-6 building for just the difference.',
+    cranePark: 'Building over the park with the crane makes the new building 6 cards cheaper.',
+    guildHallProduction: 'Guild hall scores every production building, and more for each different kind.',
+    cityHallViolet: 'City hall scores 1 point for every violet building.',
+    triumphalArchMonument: 'Triumphal arch scores more with every monument (1 / 2 / 3).',
+    customsTradingPost: 'Customs office goods always sell for 2; the trading post sells 1 more.',
+    harborTradingPost: 'Harbor keeps a sold card as a point each trade; selling more often pays off.',
+    goldsmithGoldMine: 'Gold mine and goldsmith both trigger in the prospector phase.',
+    bankChapel: 'Bank and chapel both turn hand cards into points.',
+    officeTower: 'Office building swaps weak cards; the tower lets you keep the good ones.',
+  } as Record<ComboId, string>,
   profileTitle: 'Your colour & icon',
   profileHint: 'Everyone sees you in this colour. If another player already has it, you keep a free colour and can change it during the game by clicking your token.',
   changeProfile: 'Change your colour or icon',
@@ -45,6 +114,8 @@ const en = {
   hostLabel: 'Host',
   addBot: 'Add computer player',
   removeBot: 'Remove',
+  botLevelLabel: 'Strength',
+  botLevels: { beginner: 'Beginner', player: 'Player', expert: 'Expert', boss: 'Boss' } as Record<BotLevel, string>,
   startGame: (n: number) => `Start game (${n} players)`,
   needTwoPlayers: 'A game needs at least 2 players.',
   waitingForHost: 'Waiting for the host to start the game…',
@@ -257,6 +328,73 @@ const zhTW: Messages = {
   hostTitle: '建立遊戲',
   hostHint: '在這個瀏覽器開一個房間，把代碼分享給對手。',
   expansionOption: '加入「新建築」擴充',
+  hintsToggle: '組合提示',
+  hintsToggleTitle: '顯示每個階段的效果怎麼疊加，以及哪些牌能和你的建築組合',
+  comboBadge: '組合',
+  combosTitle: '與你的建築的組合',
+  phaseHintsTitle: '你的疊加效果',
+  boostTotal: (role, a, b) =>
+    role === 'builder'
+      ? `每棟建築少付 ${a} 張`
+      : role === 'producer'
+        ? `最多生產 ${a} 個`
+        : role === 'trader'
+          ? `最多賣 ${a} 個`
+          : role === 'councillor'
+            ? `抽 ${a} 留 ${b}`
+            : `抽 ${a} 張`,
+  boost: (role, source, n, name) => {
+    if (source === 'base') return role === 'councillor' ? '基本：抽 2 留 1' : `基本：${role === 'producer' ? '生產' : '賣'} 1 個`
+    if (source === 'privilege') return role === 'councillor' ? `特權：多抽 ${n} 張` : role === 'builder' ? `特權：少付 ${n} 張` : `特權：+${n}`
+    if (source === 'library') return `${name}：特權加倍`
+    const text: Partial<Record<BoostSource, string>> = {
+      smithy: '生產建築少付 1 張',
+      quarry: '紫色建築少付 1 張',
+      crane: '可蓋在舊建築上，只付差額',
+      black_market: '最多可用 2 個貨物代替手牌付款',
+      poor_house: '蓋完後手牌剩 0～1 張時抽 1 張',
+      carpenter: '蓋紫色建築後抽 1 張',
+      aqueduct: '+1 個',
+      well: '一次生產 2 個以上時抽 1 張',
+      trading_post: '+1 個',
+      market_stand: '一次賣 2 個以上時抽 1 張',
+      market_hall: '有賣出就多抽 1 張',
+      customs_office: '上面的貨物固定賣 2 張',
+      harbor: '賣出的牌留 1 張當 1 分',
+      prefecture: '多留 1 張',
+      archive: '可以連手牌一起挑',
+      gold_mine: '翻 4 張費用都不同時，收最便宜的',
+      goldsmith: '翻 1 張，沒人蓋過就收下',
+    }
+    return `${name}：${text[source] ?? ''}`
+  },
+  combos: {
+    smithyProduction: '鐵匠鋪讓每棟生產建築少付 1 張，可以和建築師特權疊加。',
+    quarryViolet: '採石場讓每棟紫色建築少付 1 張，可以和建築師特權疊加。',
+    carpenterViolet: '木工坊：每蓋一棟紫色建築就抽回 1 張。',
+    quarryCarpenter: '採石場＋木工坊：紫色建築少付 1 張，蓋完再抽回 1 張。',
+    libraryAqueduct: '圖書館讓製造商特權加倍，再配上水道，一次可以生產 4 個。',
+    libraryTradingPost: '圖書館讓貿易商特權加倍，再配貿易站，一次可以賣 4 個。',
+    libraryPrefecture: '圖書館讓議員抽 8 張，總督府讓你留 2 張。',
+    aqueductWell: '上水道多生產 1 個，很容易觸發水井（生產 2 個以上抽 1 張）。',
+    tradingPostMarketStand: '貿易站多賣 1 個，很容易觸發攤販（賣 2 個以上抽 1 張）。',
+    tradingPostMarketHall: '貿易站多賣 1 個，市場又讓每次有賣出就多抽 1 張。',
+    marketStandHall: '攤販和市場可以同時觸發：一次賣 2 個以上會多抽 2 張。',
+    prefectureArchive: '檔案室讓你連手牌一起挑，總督府再多留 1 張。',
+    towerChapel: '高塔讓手牌上限變成 12，手牌多就能每回合壓 1 張到教堂。',
+    towerPrefecture: '高塔讓你留得住總督府多留下來的牌。',
+    blackMarketProduction: '黑市可以用貨物代替手牌付款，生產建築越多越好用。',
+    craneCost6: '起重機可以把舊建築升級成 6 費建築，只付差額。',
+    cranePark: '用起重機蓋在公園上，新建築少付 6 張。',
+    guildHallProduction: '公會大廳：每棟生產建築都加分，種類越多加越多。',
+    cityHallViolet: '市政廳：每棟紫色建築加 1 分。',
+    triumphalArchMonument: '凱旋門：紀念碑越多加越多分（1／2／3 座）。',
+    customsTradingPost: '海關上的貨物固定賣 2 張，貿易站再多賣 1 個。',
+    harborTradingPost: '港口每次交易都把 1 張賣出的牌留作分數，賣得越勤越划算。',
+    goldsmithGoldMine: '金礦和金工坊在礦工階段都會觸發。',
+    bankChapel: '銀行和教堂都能把手牌變成分數。',
+    officeTower: '辦公大樓換掉爛牌，高塔讓你留住好牌。',
+  },
   profileTitle: '你的顏色與圖示',
   profileHint: '其他玩家會用這個顏色看到你。如果顏色已經被別人選走，會先給你一個沒人用的顏色，遊戲中點自己的圖示可以再換。',
   changeProfile: '更換顏色或圖示',
@@ -277,6 +415,8 @@ const zhTW: Messages = {
   hostLabel: '主持人',
   addBot: '加入電腦玩家',
   removeBot: '移除',
+  botLevelLabel: '強度',
+  botLevels: { beginner: '初學者', player: '玩家', expert: '強者', boss: '魔王' },
   startGame: (n) => `開始遊戲（${n} 人）`,
   needTwoPlayers: '至少需要 2 位玩家才能開始。',
   waitingForHost: '等待主持人開始遊戲…',

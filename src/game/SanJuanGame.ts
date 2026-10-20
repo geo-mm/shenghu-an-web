@@ -1,7 +1,7 @@
 import type { Game, LongFormMove, MoveFn } from 'boardgame.io'
 import { ActivePlayers } from 'boardgame.io/core'
 import { HIDDEN_CARD, type CardId, type RoleId } from './cards'
-import { chooseBotAction } from './ai'
+import { chooseBotAction, isBotLevel } from './ai'
 import {
   actBuild,
   actChooseRole,
@@ -132,12 +132,15 @@ export function createSanJuanGame(options: GameOptions = {}): Game<SanJuanState>
 
     setProfile: setting(({ G, playerID }, profile: unknown) => actSetProfile(G, playerID, profile)),
 
-    /** Host, before the start: put a bot in an empty seat (or take it out). */
-    setBot: setting(({ G, ctx, playerID }, seat: PlayerID, on: boolean) => {
+    /** Host, before the start: put a bot of the given level in an empty seat, or take it out (null). */
+    setBot: setting(({ G, ctx, playerID }, seat: PlayerID, level: unknown) => {
       if (playerID !== HOST_SEAT) return 'Only the host can add bots.'
       if (G.started) return 'The game has already started.'
       if (seat === HOST_SEAT || !ctx.playOrder.includes(seat)) return 'Invalid seat.'
-      G.bots = on ? [...new Set([...G.bots, seat])].sort() : G.bots.filter((b) => b !== seat)
+      if (level !== null && !isBotLevel(level)) return 'Unknown level.'
+      G.bots = level ? [...new Set([...G.bots, seat])].sort() : G.bots.filter((b) => b !== seat)
+      if (level) G.botLevels[seat] = level
+      else delete G.botLevels[seat]
       return null
     }),
 
@@ -152,7 +155,7 @@ export function createSanJuanGame(options: GameOptions = {}): Game<SanJuanState>
         }
         const seats = [...seating.humans, ...seating.bots].sort()
         const fresh = createInitialState({ numPlayers: seats.length, playOrder: seats }, random, options)
-        Object.assign(G, fresh, { started: true, bots: [...seating.bots].sort(), profiles: G.profiles })
+        Object.assign(G, fresh, { started: true, bots: [...seating.bots].sort(), botLevels: G.botLevels, profiles: G.profiles })
         events.endTurn()
       }) as MoveFn<SanJuanState>,
     },
@@ -163,7 +166,7 @@ export function createSanJuanGame(options: GameOptions = {}): Game<SanJuanState>
       move: ((args: MoveContext) => {
         const { G, playerID, random } = args
         if (playerID !== HOST_SEAT || !G.started || !G.bots.includes(G.actor)) return
-        const choice = chooseBotAction(G, tableCtx(G), () => random.Number())
+        const choice = chooseBotAction(G, tableCtx(G), () => random.Number(), G.botLevels[G.actor] ?? 'player')
         if (choice) perform(args, G.actor, ACTIONS[choice.move as keyof typeof ACTIONS] as Action, choice.args)
       }) as MoveFn<SanJuanState>,
     },

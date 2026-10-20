@@ -1,60 +1,72 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Client } from 'boardgame.io/client'
 import { Local } from 'boardgame.io/multiplayer'
-import { createSanJuanGame } from '../game/SanJuanGame'
+import type { BotLevel } from '../game/ai'
 import { legalActions } from '../game/bot'
+import { tableCtx } from '../game/engine'
+import { HOST_SEAT, createSanJuanGame } from '../game/SanJuanGame'
 import type { ClientState, MatchPlayer } from '../hooks/useP2PMatch'
 import { Board } from './Board'
 import { loadProfilePref } from './Players'
 
 const BOT_DELAY_MS = 500
 
+interface Props {
+  numPlayers: number
+  expansion: boolean
+  /** A bot plays my seat too (random legal actions), for watching whole games. */
+  auto: boolean
+  level: BotLevel
+}
+
 /**
- * Local preview of the game table (`?demo=N`, optionally `&expansion`):
- * I play seat 0 and simple bots play the others, all in this browser
- * (with `&auto`, a bot plays my seat too).
+ * Local preview of the game table (`?demo=N`, optionally `&expansion`, `&level=boss`, `&auto`):
+ * a room where I sit at seat 0 and computer players fill the others, all in this browser.
  */
-export function DemoTable({ numPlayers, expansion, auto }: { numPlayers: number; expansion: boolean; auto: boolean }) {
-  const clients = useMemo(() => {
-    const game = createSanJuanGame({ expansion })
-    const multiplayer = Local()
-    return Array.from({ length: numPlayers }, (_, i) => Client({ game, numPlayers, multiplayer, playerID: String(i) }))
-  }, [numPlayers, expansion])
+export function DemoTable({ numPlayers, expansion, auto, level }: Props) {
+  const client = useMemo(
+    () => Client({ game: createSanJuanGame({ expansion, lobby: true }), numPlayers, multiplayer: Local(), playerID: HOST_SEAT }),
+    [numPlayers, expansion],
+  )
   const [state, setState] = useState<ClientState | null>(null)
 
   useEffect(() => {
-    clients.forEach((c) => c.start())
+    client.start()
+    const unsubscribe = client.subscribe((s) => s && setState(s))
     const pref = loadProfilePref()
-    if (pref) clients[0].moves.setProfile(pref)
-    const unsubscribe = clients[0].subscribe((s) => s && setState(s))
-    // Each bot moves a moment after it becomes its turn.
-    let rng = 12345
-    const timers = clients.slice(auto ? 0 : 1).map((bot) => {
-      let timer: number | undefined
-      const unsub = bot.subscribe((s) => {
-        window.clearTimeout(timer)
-        if (!s || s.ctx.gameover || s.G.actor !== bot.playerID) return
-        timer = window.setTimeout(() => {
-          const options = legalActions(s.G, s.ctx)
-          const real = options.filter((o) => o.move !== 'pass')
-          const pool = real.length > 0 ? real : options
-          const choice = pool[(rng = (rng * 16807) % 2147483647) % pool.length]
-          if (choice) bot.moves[choice.move](...choice.args)
-        }, auto ? BOT_DELAY_MS / 10 : BOT_DELAY_MS)
-      })
-      return () => {
-        window.clearTimeout(timer)
-        unsub()
-      }
-    })
+    if (pref) client.moves.setProfile(pref)
+    const bots = Array.from({ length: numPlayers - 1 }, (_, i) => String(i + 1))
+    bots.forEach((b) => client.moves.setBot(b, level))
+    client.moves.startGame({ humans: [HOST_SEAT], bots })
     return () => {
       unsubscribe()
-      timers.forEach((stop) => stop())
-      clients.forEach((c) => c.stop())
+      client.stop()
     }
-  }, [clients, auto])
+  }, [client, numPlayers, level])
 
-  if (!state) return null
-  const players = clients.map((_, i) => ({ id: i, isConnected: true }) as MatchPlayer)
-  return <Board state={state} playerID="0" players={players} moves={clients[0].moves as Record<string, (...args: unknown[]) => void>} />
+  // Computer seats (and mine with &auto) move after a short pause.
+  const step = state && state.G.started && !state.ctx.gameover ? state._stateID : null
+  useEffect(() => {
+    if (step === null || !state) return
+    const { G } = state
+    const mine = G.actor === HOST_SEAT
+    if (mine && !auto) return
+    const timer = window.setTimeout(
+      () => {
+        if (!mine) return client.moves.botTurn()
+        const options = legalActions(G, tableCtx(G))
+        const real = options.filter((o) => o.move !== 'pass')
+        const pool = real.length ? real : options
+        const choice = pool[Math.floor(Math.random() * pool.length)]
+        if (choice) client.moves[choice.move](...choice.args)
+      },
+      auto ? BOT_DELAY_MS / 5 : BOT_DELAY_MS,
+    )
+    return () => window.clearTimeout(timer)
+    // `step` changes with every new state, so `state` is current here.
+  }, [step, client, auto])
+
+  if (!state?.G.started) return null
+  const players = state.G.seats.map((p) => ({ id: Number(p), isConnected: true }) as MatchPlayer)
+  return <Board state={state} playerID={HOST_SEAT} players={players} moves={client.moves as Record<string, (...args: unknown[]) => void>} />
 }

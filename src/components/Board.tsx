@@ -21,6 +21,7 @@ import type { ClientState, MatchPlayer } from '../hooks/useP2PMatch'
 import { roleArt } from '../art'
 import { playerProfiles, type PlayerProfile } from '../game/players'
 import { PlayerToken, ProfilePicker, ProfilesProvider, saveProfilePref, usePlayerClass, useProfiles } from './Players'
+import { PhaseHints, useCombos, useHints, useRoleHint } from './Hints'
 import { useI18n } from '../i18n/I18n'
 import type { Messages } from '../i18n/messages'
 import { CardInfoProvider } from './CardInfo'
@@ -67,8 +68,26 @@ export function Board({ state, playerID, players, moves }: Props) {
     moves.setProfile(profile)
   }
 
+  const { t } = useI18n()
+  const [hints] = useHints()
+  const combos = useCombos()
+  // Card details also list the card's combos with my buildings.
+  const comboInfo = (id: CardId) => {
+    const list = hints ? combos(G.players[playerID], cardDef(id).type) : []
+    return list.length ? (
+      <div className="combo-list" data-testid="combo-list">
+        <strong>✦ {t.combosTitle}</strong>
+        <ul>
+          {list.map((c) => (
+            <li key={c}>{c}</li>
+          ))}
+        </ul>
+      </div>
+    ) : null
+  }
+
   return (
-    <CardInfoProvider>
+    <CardInfoProvider extra={comboInfo}>
       <ProfilesProvider value={playerProfiles(G)}>
         <section className={`board table seats-${others.length}`} data-testid="board">
           {others.map((p, i) => (
@@ -138,7 +157,7 @@ function OpponentSeat({ G, p, me, seat, online }: { G: SanJuanState; p: PlayerID
       <div className="seat-info">
         <PlayerName p={p} me={me} />
         {G.governor === p && <span className="tag">{t.governorTag}</span>}
-        {G.bots.includes(p) && <span className="tag bot-tag">AI</span>}
+        {G.bots.includes(p) && <span className="tag bot-tag">AI · {t.botLevels[G.botLevels[p] ?? 'player']}</span>}
         {!online && !G.bots.includes(p) && <span className="warn small">{t.offline}</span>}
         <span className="seat-hand" title={t.inHand(pl.hand.length)}>
           <CardView id={HIDDEN_CARD} />
@@ -193,6 +212,8 @@ interface RolePanelProps {
 
 function RolePanel({ G, playerID, actionBox, onChoose }: RolePanelProps) {
   const { t } = useI18n()
+  const [hints] = useHints()
+  const roleHint = useRoleHint()
   const who = useWho(playerID)
   const pc = usePlayerClass()
   const [picked, setPicked] = useState<RoleId | null>(null)
@@ -204,6 +225,7 @@ function RolePanel({ G, playerID, actionBox, onChoose }: RolePanelProps) {
         {ROLES.map((r) => {
           const taken = G.rolesTaken.includes(r)
           const chooser = G.roleChoosers?.[r]
+          const hint = hints && !taken && G.players[playerID] ? roleHint(G, tableCtx(G), playerID, r) : null
           return (
             <button
               key={r}
@@ -212,7 +234,7 @@ function RolePanel({ G, playerID, actionBox, onChoose }: RolePanelProps) {
               aria-pressed={picked === r}
               onClick={() => setPicked(picked === r ? null : r)}
               data-testid={`role-${r}`}
-              title={t.roleSummary(t.roles[r].action, t.roles[r].privilege)}
+              title={[t.roleSummary(t.roles[r].action, t.roles[r].privilege), ...(hint?.details ?? [])].join('\n')}
             >
               {chooser != null && (
                 <span className="role-chooser" data-testid={`role-chooser-${r}`}>
@@ -222,7 +244,13 @@ function RolePanel({ G, playerID, actionBox, onChoose }: RolePanelProps) {
               )}
               {roleArt(r) && <img className="role-art" src={roleArt(r)} alt="" draggable={false} />}
               <strong>{t.roles[r].name}</strong>
-              <span className="small role-privilege">{t.roles[r].privilege}</span>
+              {hint ? (
+                <span className="small role-hint" data-testid={`role-hint-${r}`}>
+                  {hint.head}
+                </span>
+              ) : (
+                <span className="small role-privilege">{t.roles[r].privilege}</span>
+              )}
             </button>
           )
         })}
@@ -269,6 +297,9 @@ function MyArea({ G, ctx, playerID, moves, actionBox, profileOpen, setProfileOpe
   const who = useWho(playerID)
   const pc = usePlayerClass()
   const profiles = useProfiles()
+  const [hints] = useHints()
+  const combosOf = useCombos()
+  const combos = (c: CardId) => (hints ? combosOf(me, cardDef(c).type) : undefined)
   const { t } = useI18n()
   const cardName = (c: CardId) => t.cards[cardDef(c).type][0]
   const me = G.players[playerID]
@@ -477,6 +508,7 @@ function MyArea({ G, ctx, playerID, moves, actionBox, profileOpen, setProfileOpe
               id={c}
               selected={pendSel.includes(c)}
               tag={pendSel.includes(c) ? t.tags.discard : undefined}
+              combos={combos(c)}
               onClick={() => setPendSel(toggle(pendSel, c))}
             />
           ))}
@@ -509,7 +541,17 @@ function MyArea({ G, ctx, playerID, moves, actionBox, profileOpen, setProfileOpe
 
   return (
     <div className={`seat seat-me ${pc(playerID)} ${myTurn && step.kind !== 'gameOver' ? 'acting' : ''}`} data-testid={`area-${playerID}`}>
-      {panel && actionBox && createPortal(<div className="action-panel">{panel}</div>, actionBox)}
+      {panel &&
+        actionBox &&
+        createPortal(
+          <div className="action-panel">
+            {panel}
+            {hints && myTurn && step.kind === 'role' && (
+              <PhaseHints G={G} ctx={ctx} p={playerID} role={step.role} asChooser={step.chooser === playerID} />
+            )}
+          </div>,
+          actionBox,
+        )}
       <div className="seat-info">
         <button
           type="button"
@@ -556,6 +598,7 @@ function MyArea({ G, ctx, playerID, moves, actionBox, profileOpen, setProfileOpe
             id={c}
             selected={handSel.includes(c) || bankSel.includes(c) || c === target || (mode === 'councillor' && pendSel.includes(c))}
             tag={handTag(c)}
+            combos={combos(c)}
             onClick={handClickable ? () => onHandClick(c) : undefined}
           />
         ))}

@@ -49,7 +49,8 @@ play your seat too. `?gallery` shows every card.
 | `src/game/engine.ts` | The rules: pure functions for every decision (`act*`), automatic flow (`advance`), costs/limits and scoring. |
 | `src/game/SanJuanGame.ts` | boardgame.io wrapper: moves (host-only, `client: false`), turn order follows `G.actor`, `playerView` hides secret cards. |
 | `src/game/players.ts` | Player colours and icons: choices, defaults, the unique-colour rule (`setProfile` may be sent at any time). |
-| `src/game/ai.ts` | Computer player: greedy heuristics for roles, building, goods and discards (beats random play in at least 15 of 20 test games). |
+| `src/game/ai.ts`, `sim.ts` | Computer player in 4 strengths: beginner (often random), player (greedy heuristics), expert and boss (try each sensible option on reshuffled copies of the game — no peeking at hidden cards — and play the round out; boss samples more and looks further ahead). Each level beats the one below in tests. |
+| `src/game/combos.ts` | Data for the optional combo hints: which buildings strengthen each other and what stacks in each phase. |
 | `src/game/bot.ts` | Lists legal actions; used by tests to play full random games (and a future AI). |
 | `src/game/engine.test.ts`, `expansion.test.ts` | Unit tests for every rule and building, plus 90 complete random 2–4 player games with and without the expansion (`npm test`). |
 | `src/hooks/useP2PMatch.ts` | Creates the boardgame.io client with `P2P({ isHost })`, exposes state, player list and connection status. |
@@ -64,8 +65,12 @@ from it, so guests can find the host with just the token. A hosted room has 4 se
 a waiting room (`G.started = false`): the host is seat `0`; each guest first looks at the room as a
 spectator and then takes the first free seat (or is told the game has already started); the host
 can put computer players in empty seats and starts the game for 2–4 players (`startGame`), which
-deals a fresh game for just those seats (`G.seats`). Computer players (`src/game/ai.ts`) move when
-the host's browser sends `botTurn`; they decide on the host, which holds the full hidden state.
+deals a fresh game for just those seats (`G.seats`). Computer players (`src/game/ai.ts`, strength per
+seat in `G.botLevels`) move when the host's browser sends `botTurn`; they decide on the host.
+
+Combo hints (💡 in the header, remembered per browser) show what each role would give you on the
+role tiles, what stacks in the current phase, a ✦ badge on cards that combo with your buildings, and
+the combos in the card details.
 
 ## Rules implemented (San Juan, second edition)
 

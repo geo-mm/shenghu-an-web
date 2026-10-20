@@ -11,7 +11,8 @@ export function useShowCardInfo() {
   return useContext(CardInfoContext)
 }
 
-export function CardInfoProvider({ children }: { children: ReactNode }) {
+/** `extra` adds content to the dialog (the board shows the card's combos with your buildings). */
+export function CardInfoProvider({ children, extra }: { children: ReactNode; extra?: (id: CardId) => ReactNode }) {
   const [card, setCard] = useState<CardId | null>(null)
   const show = (id: CardId) => {
     if (id !== HIDDEN_CARD) setCard(id)
@@ -19,12 +20,12 @@ export function CardInfoProvider({ children }: { children: ReactNode }) {
   return (
     <CardInfoContext.Provider value={show}>
       {children}
-      {card !== null && <CardInfoDialog id={card} onClose={() => setCard(null)} />}
+      {card !== null && <CardInfoDialog id={card} onClose={() => setCard(null)} extra={extra?.(card)} />}
     </CardInfoContext.Provider>
   )
 }
 
-function CardInfoDialog({ id, onClose }: { id: CardId; onClose: () => void }) {
+function CardInfoDialog({ id, onClose, extra }: { id: CardId; onClose: () => void; extra?: ReactNode }) {
   const { t, lang } = useI18n()
   const def = cardDef(id)
   const [name, text] = t.cards[def.type]
@@ -57,6 +58,7 @@ function CardInfoDialog({ id, onClose }: { id: CardId; onClose: () => void }) {
           {otherName} · {t.kind[kind]}
         </p>
         <p className="card-info-text">{text}</p>
+        {extra}
         <dl>
           <dt>{t.cost}</dt>
           <dd>{def.cost}</dd>

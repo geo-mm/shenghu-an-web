@@ -256,9 +256,6 @@ select { font: inherit; padding: 4px 8px; border-radius: 6px; border: 1px solid 
 .log { flex: 1 1 0; min-height: 3.5em; display: flex; flex-direction: column; padding: 8px 14px; }
 .log h3 { margin: 0; font-size: 0.95rem; }
 .log ol { margin: 8px 0 0; padding-left: 2.6em; flex: 1; min-height: 0; overflow: auto; font-size: 0.85rem; }
-.scores table { border-collapse: collapse; width: 100%; }
-.scores th, .scores td { padding: 4px 8px; border-bottom: 1px solid var(--border); text-align: center; }
-.scores tr.winner { background: var(--code-bg); font-weight: 600; }
 .table-scroll { overflow-x: auto; }
 
 /* ---- Language, role confirmation, card details ---- */
@@ -436,3 +433,22 @@ input:focus, select:focus, button:focus-visible { outline: 2px solid var(--gold)
 }
 /* Card details always open above the decision window. */
 .modal-backdrop { z-index: 50; }
+
+/* ---- Game over: the results window, centred over the whole table ---- */
+.gameover-window { grid-row: 1 / 4; grid-column: 1 / -1; align-self: center; width: min(720px, 100%); }
+.gameover-window.collapsed { align-self: end; }
+.trophy { display: grid; place-items: center; font-size: 1.6rem; background: radial-gradient(#ffe9a8, #c9a24a); }
+.scores-headline { margin: 2px 0 10px; text-align: center; font-family: var(--serif-zh); font-size: 1.35rem; color: #5a3510; }
+.scores-headline.won { color: #9b2a22; text-shadow: 0 0 12px rgba(255, 200, 90, 0.8); }
+.scores table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+.scores th { font-family: var(--serif-zh); font-size: 0.85rem; color: #6b4a1f; border-bottom: 2px solid var(--gold); padding: 4px 6px; }
+.scores td { padding: 6px; border-bottom: 1px solid rgba(138, 106, 38, 0.35); text-align: center; }
+.scores td:nth-child(2) { text-align: left; }
+.scores td.rank { font-size: 1.3rem; width: 2.2em; }
+.scores tr.winner { background: linear-gradient(90deg, rgba(255, 215, 120, 0.55), rgba(255, 236, 180, 0.25)); }
+.scores tr.me td { font-weight: 700; }
+.gameover-window .actions { justify-content: center; margin-top: 14px; }
+@media (max-aspect-ratio: 4/5) {
+  .gameover-window { top: 20dvh; max-height: 70dvh; }
+}
+.scores .pname { white-space: nowrap; }

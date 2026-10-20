@@ -34,6 +34,8 @@ interface Props {
   playerID: PlayerID
   players: MatchPlayer[]
   moves: Moves
+  /** Back to the lobby (offered when the game is over). */
+  onLeave?: () => void
 }
 
 /** Translates a player ID relative to me ("You" / "Player 1"). */
@@ -51,7 +53,7 @@ type Seat = 'top' | 'left' | 'right'
  * the edge, roles and status in the middle, the action panel and log at the
  * side, and my buildings and hand along the bottom.
  */
-export function Board({ state, playerID, players, moves }: Props) {
+export function Board({ state, playerID, players, moves, onLeave }: Props) {
   const { G } = state
   // Only the seated players: a hosted room has 4 seats but may start with fewer.
   const ctx = tableCtx(G)
@@ -67,6 +69,7 @@ export function Board({ state, playerID, players, moves }: Props) {
   const [actionBox, setActionBox] = useState<HTMLDivElement | null>(null)
   const [sideBox, setSideBox] = useState<HTMLDivElement | null>(null)
   const [collapsed, setCollapsed] = useState(false)
+  const [scoresCollapsed, setScoresCollapsed] = useState(false)
   const step = G.step
   const myDecision = G.actor === playerID && step.kind !== 'gameOver'
   const decisionTitle =
@@ -103,18 +106,39 @@ export function Board({ state, playerID, players, moves }: Props) {
 
           <div className="table-center">
             <StatusBar G={G} playerID={playerID} />
-            {G.step.kind === 'gameOver' ? (
-              <ScoreTable G={G} playerID={playerID} />
-            ) : (
-              // Keyed by state so a pending (unconfirmed) role choice resets after every move.
-              <RolePanel key={`roles-${state._stateID}`} G={G} playerID={playerID} actionBox={actionBox} onChoose={(r) => moves.chooseRole(r)} />
-            )}
+            {/* Keyed by state so a pending (unconfirmed) role choice resets after every move. */}
+            <RolePanel key={`roles-${state._stateID}`} G={G} playerID={playerID} actionBox={actionBox} onChoose={(r) => moves.chooseRole(r)} />
           </div>
 
           <aside className="table-side">
             <div className="side-note" ref={setSideBox} />
             <Log G={G} playerID={playerID} />
           </aside>
+
+          {/* The final scores, in a window that can be folded away to look at the finished table. */}
+          {step.kind === 'gameOver' && (
+            <div className={`decision-window gameover-window ${scoresCollapsed ? 'collapsed' : ''}`} role="dialog" aria-label={t.stepGameOver} data-testid="gameover-window">
+              <header className="decision-head">
+                <span className="decision-art trophy" aria-hidden>
+                  🏆
+                </span>
+                <h2>{t.stepGameOver}</h2>
+                <button className="ghost decision-toggle" onClick={() => setScoresCollapsed(!scoresCollapsed)} aria-expanded={!scoresCollapsed}>
+                  {scoresCollapsed ? t.expand : t.collapse}
+                </button>
+              </header>
+              <div className="decision-body">
+                <ScoreTable G={G} playerID={playerID} />
+                {onLeave && (
+                  <div className="actions">
+                    <button className="primary" onClick={onLeave} data-testid="back-to-lobby">
+                      {t.backToLobby}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* My decisions open in a window over the middle of the table; my seat below stays usable. */}
           {myDecision && (
@@ -679,13 +703,20 @@ function ScoreTable({ G, playerID }: { G: SanJuanState; playerID: PlayerID }) {
   const { t } = useI18n()
   const who = useWho(playerID)
   if (!G.scores) return null
+  // Best first: total, then the tie-break.
+  const ranked = [...G.scores].sort((a, b) => b.total - a.total || b.tiebreak - a.tiebreak)
+  const rank = (i: number) => 1 + ranked.findIndex((s) => s.total === ranked[i].total && s.tiebreak === ranked[i].tiebreak)
+  const medal = ['🥇', '🥈', '🥉']
   return (
-    <div className="panel scores" data-testid="scores">
-      <h2>{G.winners?.includes(playerID) ? t.youWin : t.winner((G.winners ?? []).map(who).join(' & '))}</h2>
+    <div className="scores" data-testid="scores">
+      <h3 className={`scores-headline ${G.winners?.includes(playerID) ? 'won' : ''}`}>
+        {G.winners?.includes(playerID) ? t.youWin : t.winner((G.winners ?? []).map(who).join(' & '))}
+      </h3>
       <div className="table-scroll">
         <table>
           <thead>
             <tr>
+              <th aria-label="#" />
               {t.scoreCols.map((c, i) => (
                 <th key={c} title={i === 6 ? t.tiebreakTitle : i === 2 ? t.storedTitle : undefined}>
                   {c}
@@ -694,8 +725,9 @@ function ScoreTable({ G, playerID }: { G: SanJuanState; playerID: PlayerID }) {
             </tr>
           </thead>
           <tbody>
-            {G.scores.map((s) => (
-              <tr key={s.player} className={G.winners?.includes(s.player) ? 'winner' : ''}>
+            {ranked.map((s, i) => (
+              <tr key={s.player} className={`${G.winners?.includes(s.player) ? 'winner' : ''} ${s.player === playerID ? 'me' : ''}`}>
+                <td className="rank">{medal[rank(i) - 1] ?? rank(i)}</td>
                 <td>
                   <PlayerName p={s.player} me={playerID} />
                 </td>

@@ -134,7 +134,7 @@ export default function App() {
           {inRoom && <WaitingRoom G={state.G} players={players} playerID={myPlayerID} moves={client.moves} />}
 
           {gameStarted && state && client && (
-            <Board state={state} playerID={myPlayerID} players={players} moves={client.moves} />
+            <Board state={state} playerID={myPlayerID} players={players} moves={client.moves} onLeave={leave} />
           )}
         </>
       )}

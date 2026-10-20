@@ -68,5 +68,13 @@ export function DemoTable({ numPlayers, expansion, auto, level }: Props) {
 
   if (!state?.G.started) return null
   const players = state.G.seats.map((p) => ({ id: Number(p), isConnected: true }) as MatchPlayer)
-  return <Board state={state} playerID={HOST_SEAT} players={players} moves={client.moves as Record<string, (...args: unknown[]) => void>} />
+  return (
+    <Board
+      state={state}
+      playerID={HOST_SEAT}
+      players={players}
+      moves={client.moves as Record<string, (...args: unknown[]) => void>}
+      onLeave={() => location.assign(location.pathname)}
+    />
+  )
 }

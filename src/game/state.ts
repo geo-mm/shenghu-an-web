@@ -75,6 +75,12 @@ export interface Score {
 }
 
 export interface SanJuanState {
+  /** False while a hosted room is still waiting for players (see the lobby option). */
+  started: boolean
+  /** Players at the table, in seat order (a hosted room has 4 seats; only these play). */
+  seats: PlayerID[]
+  /** Seats played by the computer (the host's browser asks it to move). */
+  bots: PlayerID[]
   /** Playing with the "New Buildings" expansion. */
   expansion: boolean
   /** Goods sold so far in the current trader phase (for the hut). */

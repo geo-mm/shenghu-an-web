@@ -260,7 +260,12 @@ const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
 export interface GameOptions {
   /** Add the "New Buildings" expansion cards. */
   expansion?: boolean
+  /** Start in a waiting room: the host fills seats (people or bots) and then starts the game. */
+  lobby?: boolean
 }
+
+/** The engine's view of who plays: the seated players, not every seat of the match. */
+export const tableCtx = (G: Pick<SanJuanState, 'seats'>): EngineCtx => ({ numPlayers: G.seats.length, playOrder: G.seats })
 
 export function createInitialState(ctx: EngineCtx, rng: Rng, options: GameOptions = {}): SanJuanState {
   const expansion = options.expansion ?? false
@@ -285,6 +290,9 @@ export function createInitialState(ctx: EngineCtx, rng: Rng, options: GameOption
     round: 1,
     governor,
     pickers: pickOrder(ctx, governor),
+    started: true,
+    seats: [...ctx.playOrder],
+    bots: [],
     rolesTaken: [],
     roleChoosers: {},
     profiles: {},

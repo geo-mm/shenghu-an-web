@@ -6,15 +6,17 @@ import { Board } from './components/Board'
 import { Gallery } from './components/Gallery'
 import { DemoTable } from './components/DemoTable'
 import { loadProfilePref } from './components/Players'
-import { GUEST_PLAYER_ID, HOST_PLAYER_ID, useP2PMatch, type MatchConfig } from './hooks/useP2PMatch'
+import { WaitingRoom } from './components/WaitingRoom'
+import { HOST_PLAYER_ID, useP2PMatch, type MatchConfig } from './hooks/useP2PMatch'
 import { useI18n } from './i18n/I18n'
 import { LANGS, type Lang } from './i18n/messages'
+
+const BOT_DELAY_MS = 900
 
 export default function App() {
   const { t, lang, setLang } = useI18n()
   const [config, setConfig] = useState<MatchConfig | null>(null)
-  const { client, state, players, hostRegistered, error } = useP2PMatch(config)
-  const [startedToken, setStartedToken] = useState<string | null>(null)
+  const { client, state, players, hostRegistered, error, playerID } = useP2PMatch(config)
 
   const initialJoinToken = useMemo(
     () => normalizeToken(new URLSearchParams(window.location.search).get('join') ?? ''),
@@ -27,33 +29,44 @@ export default function App() {
     const n = Number(params.get('demo'))
     return params.has('demo') ? { numPlayers: n >= 2 && n <= 4 ? n : 2, expansion: params.has('expansion'), auto: params.has('auto') } : null
   }, [])
-  const myPlayerID = config?.role === 'host' ? HOST_PLAYER_ID : GUEST_PLAYER_ID
-  const allConnected = players.length > 0 && players.every((p) => p.isConnected)
-
-  // Once both players have been connected, keep the board up even if someone
-  // drops, so a reconnect resumes the same view. (State adjusted during render.)
-  if (config && allConnected && startedToken !== config.token) setStartedToken(config.token)
-  const gameStarted = config !== null && startedToken === config.token
+  const myPlayerID = playerID ?? HOST_PLAYER_ID
+  const isHost = config?.role === 'host'
+  // The host deals the game once the seats are filled (people and/or computer players).
+  const gameStarted = config !== null && !!state?.G.started
+  const inRoom = config !== null && !!state && !!client && !gameStarted
 
   // Once the game is up, send the colour and icon picked in the lobby (once per game).
   const sentProfile = useRef<string | null>(null)
   useEffect(() => {
     const pref = loadProfilePref()
-    if (!gameStarted || !state || !client || !config || !pref || sentProfile.current === config.token) return
+    if (!state || !client || !config || !pref || sentProfile.current === config.token) return
     sentProfile.current = config.token
     const mine = state.G.profiles?.[myPlayerID]
     if (mine?.color !== pref.color || mine?.icon !== pref.icon) client.moves.setProfile(pref)
-  }, [gameStarted, state, client, config, myPlayerID])
+  }, [state, client, config, myPlayerID])
+
+  // Host: when a computer player is to act, ask the game to play its move (after a short pause to follow along).
+  const botStep = isHost && gameStarted && state && !state.ctx.gameover && state.G.bots.includes(state.G.actor) ? state._stateID : null
+  useEffect(() => {
+    if (botStep === null || !client) return
+    const timer = window.setTimeout(() => client.moves.botTurn(), BOT_DELAY_MS)
+    return () => window.clearTimeout(timer)
+  }, [botStep, client])
 
   let status: LinkStatus = 'connecting'
   if (error) status = 'error'
-  else if (config?.role === 'host' ? !hostRegistered : !state?.isConnected) status = 'connecting'
-  else status = allConnected ? 'connected' : 'waiting'
+  else if (isHost ? !hostRegistered : !state?.isConnected) status = 'connecting'
+  else status = gameStarted ? 'connected' : 'waiting'
 
-  const leave = () => {
-    setConfig(null)
-    setStartedToken(null)
-  }
+  const leave = () => setConfig(null)
+  const errorText = (e: { type: string; message: string }) =>
+    e.type === 'unavailable-id'
+      ? t.tokenInUse
+      : e.type === 'game-started'
+        ? t.gameStartedError
+        : e.type === 'room-full'
+          ? t.roomFullError
+          : t.p2pError(e.type, e.message)
 
   const inviteLink = config ? `${location.origin}${location.pathname}?join=${config.token}` : ''
 
@@ -88,15 +101,15 @@ export default function App() {
       {config && (
         <>
           {/* During the game, seats show who is offline instead. */}
-          {!gameStarted && <ConnectionStatus status={status} config={config} players={players} myPlayerID={myPlayerID} />}
+          {!gameStarted && <ConnectionStatus status={status} config={config} />}
 
           {error && (
-            <p className="error" role="alert">
-              {error.type === 'unavailable-id' ? t.tokenInUse : t.p2pError(error.type, error.message)}
+            <p className="error" role="alert" data-testid="p2p-error">
+              {errorText(error)}
             </p>
           )}
 
-          {config.role === 'host' && !gameStarted && (
+          {isHost && !gameStarted && (
             <section className="panel token-panel">
               <h2>{t.roomToken}</h2>
               <div className="token" data-testid="room-token">
@@ -110,9 +123,9 @@ export default function App() {
             </section>
           )}
 
-          {config.role === 'guest' && status === 'connecting' && !error && (
-            <p className="muted">{t.lookingForHost(config.token)}</p>
-          )}
+          {!isHost && status === 'connecting' && !error && <p className="muted">{t.lookingForHost(config.token)}</p>}
+
+          {inRoom && <WaitingRoom G={state.G} players={players} playerID={myPlayerID} moves={client.moves} />}
 
           {gameStarted && state && client && (
             <Board state={state} playerID={myPlayerID} players={players} moves={client.moves} />

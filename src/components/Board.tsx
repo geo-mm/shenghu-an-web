@@ -13,6 +13,8 @@ import {
   maxSell,
   owns,
   placementError,
+  tableCtx,
+  type EngineCtx,
 } from '../game/engine'
 import type { PlayerID, SanJuanState } from '../game/state'
 import type { ClientState, MatchPlayer } from '../hooks/useP2PMatch'
@@ -49,8 +51,10 @@ type Seat = 'top' | 'left' | 'right'
  * side, and my buildings and hand along the bottom.
  */
 export function Board({ state, playerID, players, moves }: Props) {
-  const { G, ctx } = state
-  const order = ctx.playOrder
+  const { G } = state
+  // Only the seated players: a hosted room has 4 seats but may start with fewer.
+  const ctx = tableCtx(G)
+  const order = G.seats
   const me = order.indexOf(playerID)
   const others = [...order.slice(me + 1), ...order.slice(0, me)]
   const seats = SEATS[others.length] ?? []
@@ -134,7 +138,8 @@ function OpponentSeat({ G, p, me, seat, online }: { G: SanJuanState; p: PlayerID
       <div className="seat-info">
         <PlayerName p={p} me={me} />
         {G.governor === p && <span className="tag">{t.governorTag}</span>}
-        {!online && <span className="warn small">{t.offline}</span>}
+        {G.bots.includes(p) && <span className="tag bot-tag">AI</span>}
+        {!online && !G.bots.includes(p) && <span className="warn small">{t.offline}</span>}
         <span className="seat-hand" title={t.inHand(pl.hand.length)}>
           <CardView id={HIDDEN_CARD} />
           <span>×{pl.hand.length}</span>
@@ -250,7 +255,7 @@ function RolePanel({ G, playerID, actionBox, onChoose }: RolePanelProps) {
 
 interface MyAreaProps {
   G: SanJuanState
-  ctx: ClientState['ctx']
+  ctx: EngineCtx
   playerID: PlayerID
   moves: Moves
   actionBox: HTMLElement | null

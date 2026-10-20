@@ -286,3 +286,13 @@ select { font: inherit; padding: 4px 8px; border-radius: 6px; border: 1px solid 
 .profile-panel { grid-column: 1 / -1; }
 .expansion-option input { flex: none; }
 .seat-me .seat-info { max-width: none; }
+
+/* ---- Waiting room (before the host starts) ---- */
+.seat-list { list-style: none; padding: 0; margin: 0 0 8px; display: grid; gap: 6px; }
+.seat-row { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 10px; min-height: 44px; }
+.seat-row.empty { border-style: dashed; color: var(--muted); }
+.seat-row .seat-name { font-weight: 600; }
+.seat-row .small-btn { margin-left: auto; }
+.ptoken.empty { background: none; box-shadow: 0 0 0 1px dashed var(--border); border: 1px dashed var(--muted); }
+.small-btn { padding: 4px 10px; font-size: 0.85rem; }
+.bot-tag { background: var(--muted); }

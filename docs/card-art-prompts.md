@@ -173,6 +173,27 @@ No text.
 
 ---
 
+## 介面素材（4 張，選用）
+
+讓整個畫面（不只卡牌）有同一種風格：牌桌底圖、羊皮紙質感、視窗外框、大廳插圖。沒有圖時程式用 CSS 畫的版本，有圖就自動換上。
+`panel-frame.png` 跟裝飾零件一樣，背景要是**純洋紅色 `#FF00FF`**（框的內外都是），程式會去背。
+
+| 檔名 | 尺寸 | 貼給 ChatGPT |
+|---|---|---|
+| `table.png` | 橫式 1536×1024 | `A top-down view of an old wooden table in a harbour tavern, partly covered by a faded sea chart with a compass rose, warm lantern light and a soft dark vignette at the edges (same style). Keep the middle calm and low in detail so cards placed on top stay readable. Muted teal, deep blue and warm brown colours. No text, no people, no objects in the middle.` |
+| `parchment.png` | 正方形 1024×1024 | `A seamless, tileable texture of warm, slightly aged parchment paper: very subtle fibres and faint stains, evenly lit, light cream colour, no borders, no vignette, no text.` |
+| `panel-frame.png` | 正方形 1024×1024 | `An ornate square frame for a game window (same style): a thin carved gold border with small flourished corners and a delicate teal enamel inlay, about 5% of the width on each side, perfectly symmetric. Everything inside the border and outside it is a perfectly flat solid magenta #FF00FF with no shadow. No text.` |
+| `lobby-hero.png` | 橫式 1536×1024 | `A wide panoramic view of a sunny fantasy southern harbour town (same style): white houses with terracotta roofs on a hillside, sailing ships in a turquoise bay, palm trees and warm late-afternoon light, fading softly to a warm parchment colour along the bottom edge. No text, no characters in the foreground.` |
+
+產生方式：
+
+```
+python3 scripts/generate_art.py table parchment panel-frame lobby-hero --backend codex --codex-sandbox danger-full-access
+npm run art -- --skip-existing
+```
+
+---
+
 ## 玩家圖示（8 張，正方形 1024×1024，選用）
 
 玩家可以從 8 種顏色、8 種圖示中各選一個（顏色不能重複）。圖示會疊在玩家選的顏色圓盤上，

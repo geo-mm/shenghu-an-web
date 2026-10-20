@@ -22,7 +22,19 @@ export const roleArt = (role: RoleId | 'governor'): string | undefined => roles[
 export const playerIconArt = (icon: PlayerIcon): string | undefined => icons[icon]
 
 /** Decorative card parts; each one replaces its CSS fallback when present. */
-export const UI_PARTS = ['frame', 'card-back', 'ribbon', 'medallion', 'vp-badge', 'text-panel'] as const
+export const UI_PARTS = [
+  'frame',
+  'card-back',
+  'ribbon',
+  'medallion',
+  'vp-badge',
+  'text-panel',
+  // The page around the cards: table background, parchment texture, window frame, lobby picture.
+  'table',
+  'parchment',
+  'panel-frame',
+  'lobby-hero',
+] as const
 
 /** Exposes the available UI parts as CSS variables plus `art-<part>` classes on <html>. */
 export function applyUiArt(root: HTMLElement = document.documentElement) {

@@ -61,16 +61,23 @@ export function Board({ state, playerID, players, moves }: Props) {
   const seats = SEATS[others.length] ?? []
   const online = (p: PlayerID) => players.find((m) => String(m.id) === p)?.isConnected ?? false
   // MyArea and RolePanel render their controls into the action box (portal), so selections live next to the cards.
+  const { t } = useI18n()
+  const [hints] = useHints()
+  const combos = useCombos()
   const [actionBox, setActionBox] = useState<HTMLDivElement | null>(null)
+  const [sideBox, setSideBox] = useState<HTMLDivElement | null>(null)
+  const [collapsed, setCollapsed] = useState(false)
+  const step = G.step
+  const myDecision = G.actor === playerID && step.kind !== 'gameOver'
+  const decisionTitle =
+    step.kind === 'chooseRole' ? t.decisionChooseRole : step.kind === 'governor' ? t.stepGovernor : step.kind === 'role' ? t.decisionRole(t.roles[step.role].name) : ''
+  const decisionArt = step.kind === 'role' ? roleArt(step.role) : step.kind === 'governor' ? roleArt('governor') : undefined
   const [profileOpen, setProfileOpen] = useState(false)
   const setProfile = (profile: PlayerProfile) => {
     saveProfilePref(profile)
     moves.setProfile(profile)
   }
 
-  const { t } = useI18n()
-  const [hints] = useHints()
-  const combos = useCombos()
   // Card details also list the card's combos with my buildings.
   const comboInfo = (id: CardId) => {
     const list = hints ? combos(G.players[playerID], cardDef(id).type) : []
@@ -105,9 +112,23 @@ export function Board({ state, playerID, players, moves }: Props) {
           </div>
 
           <aside className="table-side">
-            <div className="action-box" ref={setActionBox} />
+            <div className="side-note" ref={setSideBox} />
             <Log G={G} playerID={playerID} />
           </aside>
+
+          {/* My decisions open in a window over the middle of the table; my seat below stays usable. */}
+          {myDecision && (
+            <div className={`decision-window ${collapsed ? 'collapsed' : ''}`} role="dialog" aria-label={decisionTitle} data-testid="decision-window">
+              <header className="decision-head">
+                {decisionArt && <img className="decision-art" src={decisionArt} alt="" draggable={false} />}
+                <h2>{decisionTitle}</h2>
+                <button className="ghost decision-toggle" onClick={() => setCollapsed(!collapsed)} aria-expanded={!collapsed} data-testid="decision-toggle">
+                  {collapsed ? t.expand : t.collapse}
+                </button>
+              </header>
+              <div className="decision-body" ref={setActionBox} />
+            </div>
+          )}
 
           {/* Remount on every state change so selections reset after each move. */}
           <MyArea
@@ -117,6 +138,7 @@ export function Board({ state, playerID, players, moves }: Props) {
             playerID={playerID}
             moves={moves}
             actionBox={actionBox}
+            sideBox={sideBox}
             profileOpen={profileOpen}
             setProfileOpen={setProfileOpen}
             onProfile={setProfile}
@@ -219,46 +241,51 @@ function RolePanel({ G, playerID, actionBox, onChoose }: RolePanelProps) {
   const [picked, setPicked] = useState<RoleId | null>(null)
   const canChoose = G.step.kind === 'chooseRole' && G.actor === playerID
   const active = G.step.kind === 'role' ? G.step.role : null
+  const tiles = (
+    <div className="roles">
+      {ROLES.map((r) => {
+        const taken = G.rolesTaken.includes(r)
+        const chooser = G.roleChoosers?.[r]
+        const hint = hints && !taken && G.players[playerID] ? roleHint(G, tableCtx(G), playerID, r) : null
+        return (
+          <button
+            key={r}
+            className={`role ${active === r ? 'active' : ''} ${picked === r ? 'picked' : ''} ${taken ? 'taken' : ''} ${chooser != null ? `chosen ${pc(chooser)}` : ''}`}
+            disabled={!canChoose || taken}
+            aria-pressed={picked === r}
+            onClick={() => setPicked(picked === r ? null : r)}
+            data-testid={`role-${r}`}
+            title={[t.roleSummary(t.roles[r].action, t.roles[r].privilege), ...(hint?.details ?? [])].join('\n')}
+          >
+            {chooser != null && (
+              <span className="role-chooser" data-testid={`role-chooser-${r}`}>
+                <PlayerToken p={chooser} />
+                {who(chooser)}
+              </span>
+            )}
+            {roleArt(r) && <img className="role-art" src={roleArt(r)} alt="" draggable={false} />}
+            <strong>{t.roles[r].name}</strong>
+            {hint ? (
+              <span className="small role-hint" data-testid={`role-hint-${r}`}>
+                {hint.head}
+              </span>
+            ) : (
+              <span className="small role-privilege">{t.roles[r].privilege}</span>
+            )}
+          </button>
+        )
+      })}
+    </div>
+  )
+  // While I choose, the roles move into the decision window, next to the confirm button.
   return (
     <div className="role-panel">
-      <div className="roles">
-        {ROLES.map((r) => {
-          const taken = G.rolesTaken.includes(r)
-          const chooser = G.roleChoosers?.[r]
-          const hint = hints && !taken && G.players[playerID] ? roleHint(G, tableCtx(G), playerID, r) : null
-          return (
-            <button
-              key={r}
-              className={`role ${active === r ? 'active' : ''} ${picked === r ? 'picked' : ''} ${taken ? 'taken' : ''} ${chooser != null ? `chosen ${pc(chooser)}` : ''}`}
-              disabled={!canChoose || taken}
-              aria-pressed={picked === r}
-              onClick={() => setPicked(picked === r ? null : r)}
-              data-testid={`role-${r}`}
-              title={[t.roleSummary(t.roles[r].action, t.roles[r].privilege), ...(hint?.details ?? [])].join('\n')}
-            >
-              {chooser != null && (
-                <span className="role-chooser" data-testid={`role-chooser-${r}`}>
-                  <PlayerToken p={chooser} />
-                  {who(chooser)}
-                </span>
-              )}
-              {roleArt(r) && <img className="role-art" src={roleArt(r)} alt="" draggable={false} />}
-              <strong>{t.roles[r].name}</strong>
-              {hint ? (
-                <span className="small role-hint" data-testid={`role-hint-${r}`}>
-                  {hint.head}
-                </span>
-              ) : (
-                <span className="small role-privilege">{t.roles[r].privilege}</span>
-              )}
-            </button>
-          )
-        })}
-      </div>
+      {!canChoose && tiles}
       {canChoose &&
         actionBox &&
         createPortal(
           <div className="role-confirm">
+            {tiles}
             {picked === null ? (
               <p className="muted">{t.chooseRolePrompt}</p>
             ) : (
@@ -287,13 +314,15 @@ interface MyAreaProps {
   playerID: PlayerID
   moves: Moves
   actionBox: HTMLElement | null
+  /** Where the "waiting for…" note goes when it isn't my turn. */
+  sideBox: HTMLElement | null
   profileOpen: boolean
   setProfileOpen: (open: boolean) => void
   onProfile: (profile: PlayerProfile) => void
 }
 
 /** My buildings and hand along the bottom, plus the controls for whatever I must decide now (in the action box). */
-function MyArea({ G, ctx, playerID, moves, actionBox, profileOpen, setProfileOpen, onProfile }: MyAreaProps) {
+function MyArea({ G, ctx, playerID, moves, actionBox, sideBox, profileOpen, setProfileOpen, onProfile }: MyAreaProps) {
   const who = useWho(playerID)
   const pc = usePlayerClass()
   const profiles = useProfiles()
@@ -542,7 +571,7 @@ function MyArea({ G, ctx, playerID, moves, actionBox, profileOpen, setProfileOpe
   return (
     <div className={`seat seat-me ${pc(playerID)} ${myTurn && step.kind !== 'gameOver' ? 'acting' : ''}`} data-testid={`area-${playerID}`}>
       {panel &&
-        actionBox &&
+        (myTurn ? actionBox : sideBox) &&
         createPortal(
           <div className="action-panel">
             {panel}
@@ -550,7 +579,7 @@ function MyArea({ G, ctx, playerID, moves, actionBox, profileOpen, setProfileOpe
               <PhaseHints G={G} ctx={ctx} p={playerID} role={step.role} asChooser={step.chooser === playerID} />
             )}
           </div>,
-          actionBox,
+          (myTurn ? actionBox : sideBox)!,
         )}
       <div className="seat-info">
         <button

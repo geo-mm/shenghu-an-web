@@ -55,7 +55,7 @@ play your seat too. `?gallery` shows every card.
 | `src/game/engine.test.ts`, `expansion.test.ts` | Unit tests for every rule and building, plus 90 complete random 2–4 player games with and without the expansion (`npm test`). |
 | `src/hooks/useP2PMatch.ts` | Creates the boardgame.io client with `P2P({ isHost })`, exposes state, player list and connection status. |
 | `src/components/Lobby.tsx`, `ConnectionStatus.tsx` | Host / join UI and live connection status. |
-| `src/components/Board.tsx`, `CardView.tsx` | The game table on one screen: opponents' seats around the edge, roles and status in the middle, the action box and log at the side, my buildings and hand (overlapping to fit) along the bottom. |
+| `src/components/Board.tsx`, `CardView.tsx` | The game table on one screen: opponents' seats around the edge, roles and status in the middle, the log at the side, my buildings and hand (overlapping to fit) along the bottom. My decisions open in a window over the middle of the table (collapsible), leaving my cards clickable. |
 | `src/components/DemoTable.tsx` | `?demo=N`: a local game against bots, for trying the layout with 2–4 players. |
 | `src/components/CardInfo.tsx` | Card details dialog, opened by right-click (or long-press on phones). |
 | `src/i18n/` | English / Traditional Chinese UI text, card names and effects; the choice is remembered per browser. Game logs are structured, so each player reads them in their own language. |
@@ -122,6 +122,10 @@ Each player picks one of 8 colours (unique per game) and 8 icons, in the lobby o
 by clicking their own token; the choice is remembered per browser and sent when the game starts.
 The colour marks their seat, their name in the log and the badge on roles they chose this round.
 Optional icon art `icon-anchor.png` … `icon-fish.png` (magenta background) replaces the emoji glyphs.
+
+The page itself is themed (parchment panels with gold trim on a sea-blue table, serif titles, wax-seal
+buttons) in CSS; optional images `table.png`, `parchment.png`, `panel-frame.png` (magenta background)
+and `lobby-hero.png` replace the CSS versions — prompts in the "介面素材" section of the art doc.
 
 ## Signaling
 

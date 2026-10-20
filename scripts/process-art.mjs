@@ -12,7 +12,8 @@
  *   role-<role>.png      e.g. role-trader.png → 4:3 role art
  *   card-back.png                             → 2:3 card back
  *   icon-<icon>.png      e.g. icon-anchor.png → player icon (magenta background, keyed out)
- *   frame.png, ribbon.png, medallion.png, vp-badge.png, text-panel.png
+ *   table.png, lobby-hero.png, parchment.png  → page backgrounds (parchment tiles)
+ *   frame.png, ribbon.png, medallion.png, vp-badge.png, text-panel.png, panel-frame.png
  *                        → decorative parts drawn on a flat magenta (#FF00FF)
  *                          background, which is made transparent here
  * Output goes to src/assets/art/{buildings,roles,ui,icons}/*.webp.
@@ -34,7 +35,9 @@ const BUILDINGS = [...cardsTs.matchAll(/^\s+(\w+): \{ type: '(\w+)'/gm)].map((m)
 const ROLES = ['builder', 'producer', 'trader', 'councillor', 'prospector', 'governor']
 const playersTs = await readFile(path.join(root, 'src/game/players.ts'), 'utf8')
 const ICONS = [...playersTs.match(/PLAYER_ICONS = \[([^\]]*)\]/)[1].matchAll(/'(\w+)'/g)].map((m) => m[1])
-const KEYED_PARTS = ['frame', 'ribbon', 'medallion', 'vp-badge', 'text-panel']
+const KEYED_PARTS = ['frame', 'ribbon', 'medallion', 'vp-badge', 'text-panel', 'panel-frame']
+/** Page images: name → [width, height] after a centre crop. */
+const PAGE_PARTS = { table: [1920, 1280], 'lobby-hero': [1600, 900], parchment: [512, 512] }
 
 /** Centre-crops to the aspect ratio, then resizes. */
 async function cropTo(input, width, height, out) {
@@ -91,11 +94,15 @@ for (const file of files.sort()) {
     await cropTo(input, 640, 480, path.join(outDir, 'roles', `${name.slice(5)}.webp`))
   } else if (name.startsWith('icon-') && ICONS.includes(name.slice(5))) {
     await chromaKey(input, 256, path.join(outDir, 'icons', `${name.slice(5)}.webp`))
+  } else if (name in PAGE_PARTS) {
+    const [w, h] = PAGE_PARTS[name]
+    await cropTo(input, w, h, path.join(outDir, 'ui', `${name}.webp`))
   } else if (name === 'card-back') {
     await cropTo(input, 480, 720, path.join(outDir, 'ui', 'card-back.webp'))
   } else if (KEYED_PARTS.includes(name)) {
-    // The frame keeps its full canvas so it lines up with the card edges.
-    await chromaKey(input, name === 'frame' ? 600 : 480, path.join(outDir, 'ui', `${name}.webp`), { trim: name !== 'frame' })
+    // Frames keep their full canvas so they line up with the edges they decorate.
+    const fullCanvas = name === 'frame' || name === 'panel-frame'
+    await chromaKey(input, fullCanvas ? 600 : 480, path.join(outDir, 'ui', `${name}.webp`), { trim: !fullCanvas })
   } else {
     unknown.push(file)
     continue
@@ -104,7 +111,7 @@ for (const file of files.sort()) {
   console.log(`✓ ${file}`)
 }
 
-const expected = [...BUILDINGS, ...ROLES.map((r) => `role-${r}`), 'card-back', ...KEYED_PARTS, ...ICONS.map((i) => `icon-${i}`)]
+const expected = [...BUILDINGS, ...ROLES.map((r) => `role-${r}`), 'card-back', ...KEYED_PARTS, ...Object.keys(PAGE_PARTS), ...ICONS.map((i) => `icon-${i}`)]
 const missing = expected.filter((n) => !done.has(n) && !existsSync(path.join(outDir, artPath(n))))
 if (unknown.length) console.warn(`\n⚠ Unrecognised file names (skipped): ${unknown.join(', ')}`)
 console.log(`\nProcessed ${done.size} image(s). Still missing ${missing.length}: ${missing.join(', ') || '—'}`)

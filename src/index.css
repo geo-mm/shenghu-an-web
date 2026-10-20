@@ -1,30 +1,24 @@
 :root {
-  --bg: #f6f1e7;
-  --panel: #fffdf8;
-  --text: #2b2620;
-  --muted: #7a6f62;
-  --border: #e3d8c6;
-  --accent: #b5532c;
-  --accent-text: #fff;
+  /* A fantasy harbour theme: parchment panels with gold trim on a deep sea-blue table. */
+  --bg: #0d3a46;
+  --panel: #f6e8c6;
+  --text: #2e1f0e;
+  --muted: #7a5c38;
+  --border: #c7a464;
+  --accent: #9b2a22;
+  --accent-text: #fff4dc;
+  --gold: #c9a24a;
+  --gold-dark: #8a6a26;
+  --sea: #0f4c5c;
   --ok: #2f9e44;
   --warn: #e8a317;
-  --bad: #d64545;
-  --code-bg: #f0e8da;
-  font: 16px/1.5 system-ui, 'Segoe UI', Roboto, sans-serif;
+  --bad: #c0392b;
+  --code-bg: #ecd9ae;
+  --serif: 'Cinzel', 'Noto Serif TC', 'Songti TC', serif;
+  --serif-zh: 'Noto Serif TC', 'Songti TC', 'Cinzel', serif;
+  font: 16px/1.5 system-ui, 'Segoe UI', Roboto, 'Noto Sans TC', sans-serif;
   color: var(--text);
   background: var(--bg);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #1b1916;
-    --panel: #25221e;
-    --text: #efe8dc;
-    --muted: #a59a8b;
-    --border: #3a352e;
-    --accent: #e07a4f;
-    --code-bg: #322d27;
-  }
 }
 
 * { box-sizing: border-box; }

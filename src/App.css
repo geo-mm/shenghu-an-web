@@ -395,7 +395,14 @@ input:focus, select:focus, button:focus-visible { outline: 2px solid var(--gold)
   animation: decision-in 0.22s ease-out;
 }
 @keyframes decision-in { from { opacity: 0; transform: translateY(14px) scale(0.98); } }
-.art-panel-frame .decision-window, .art-panel-frame .modal { border: 18px solid transparent; border-image: var(--sj-panel-frame) 5% stretch; }
+/* The frame image is drawn as an overlay just outside the window, so its gold band (5–8% of the
+   image) sits on the window's edge and the corner flourishes (up to 12%) stay whole. */
+.art-panel-frame .decision-window, .art-panel-frame .modal { position: relative; overflow: visible; }
+.art-panel-frame .decision-window::after, .art-panel-frame .modal::after {
+  content: ''; position: absolute; inset: -13px; pointer-events: none; z-index: 3;
+  border: 34px solid transparent; border-image: var(--sj-panel-frame) 12% stretch;
+}
+.art-panel-frame .decision-head { border-radius: 14px 14px 0 0; }
 .decision-head {
   display: flex; align-items: center; gap: 10px; padding: 8px 12px;
   background: linear-gradient(#17606f, #0d3d48); color: #f8e7bd; border-bottom: 2px solid var(--gold);
@@ -455,3 +462,8 @@ input:focus, select:focus, button:focus-visible { outline: 2px solid var(--gold)
 .name-row { display: flex; align-items: center; gap: 8px; font-family: var(--serif-zh); font-weight: 600; }
 .name-input { flex: 1; max-width: 16em; text-transform: none; letter-spacing: normal; }
 .pname, .seat-name { max-width: 14em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* With the frame image, the card details dialog drops its colour strip (the frame is the border). */
+.art-panel-frame .modal { border-top: none; }
+@media (max-aspect-ratio: 4/5) {
+  .art-panel-frame .decision-window { left: 16px; right: 16px; }
+}

@@ -4,6 +4,7 @@ import type { SanJuanState } from '../game/state'
 import type { MatchPlayer } from '../hooks/useP2PMatch'
 import { useI18n } from '../i18n/I18n'
 import { PlayerToken, PlayersProvider, usePlayerName } from './Players'
+import { Select } from './Select'
 
 interface Props {
   G: SanJuanState
@@ -50,19 +51,14 @@ function Room({ G, players, playerID, moves }: Props) {
                 {bot && <span className="tag bot-tag">AI</span>}
                 {bot &&
                   (isHost ? (
-                    <select
+                    <Select<BotLevel>
                       className="bot-level"
                       aria-label={t.botLevelLabel}
                       data-testid={`level-${seat}`}
                       value={G.botLevels[seat] ?? 'player'}
-                      onChange={(e) => moves.setBot(seat, e.target.value as BotLevel)}
-                    >
-                      {BOT_LEVELS.map((l) => (
-                        <option key={l} value={l}>
-                          {t.botLevels[l]}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(level) => moves.setBot(seat, level)}
+                      options={BOT_LEVELS.map((l) => ({ value: l, label: t.botLevels[l] }))}
+                    />
                   ) : (
                     <span className="muted small">{t.botLevels[G.botLevels[seat] ?? 'player']}</span>
                   ))}

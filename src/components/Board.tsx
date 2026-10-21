@@ -26,6 +26,7 @@ import { useI18n } from '../i18n/I18n'
 import type { Messages } from '../i18n/messages'
 import { CardInfoProvider } from './CardInfo'
 import { CardView } from './CardView'
+import { Select } from './Select'
 
 type Moves = Record<string, (...args: unknown[]) => void>
 
@@ -446,19 +447,19 @@ function MyArea({ G, ctx, playerID, moves, actionBox, sideBox, profileOpen, setP
           </div>
         )}
         {hasChapel && (
-          <label>
-            {t.tuckLabel}{' '}
-            <select value={tuck ?? ''} onChange={(e) => setTuck(e.target.value === '' ? null : Number(e.target.value))}>
-              <option value="">{t.none}</option>
-              {me.hand
-                .filter((c) => !handSel.includes(c) && !bankSel.includes(c))
-                .map((c) => (
-                  <option key={c} value={c}>
-                    {cardName(c)}
-                  </option>
-                ))}
-            </select>
-          </label>
+          <div className="field">
+            <span>{t.tuckLabel}</span>
+            <Select
+              aria-label={t.tuckLabel}
+              data-testid="tuck-select"
+              value={tuck === null ? '' : String(tuck)}
+              onChange={(v) => setTuck(v === '' ? null : Number(v))}
+              options={[
+                { value: '', label: t.none },
+                ...me.hand.filter((c) => !handSel.includes(c) && !bankSel.includes(c)).map((c) => ({ value: String(c), label: cardName(c) })),
+              ]}
+            />
+          </div>
         )}
         <div className="actions">
           <button className="primary" disabled={handSel.length !== need} onClick={() => moves.governorAction(tuck, handSel, bankSel)}>
@@ -496,17 +497,16 @@ function MyArea({ G, ctx, playerID, moves, actionBox, sideBox, profileOpen, setP
         )}
         {step.kind === 'role' && step.chooser !== playerID && <p className="muted small">{t.noPrivilege(who(step.chooser))}</p>}
         {owns(me, 'crane') && (
-          <label>
-            {t.craneLabel}{' '}
-            <select value={replace ?? ''} onChange={(e) => setReplace(e.target.value === '' ? null : Number(e.target.value))}>
-              <option value="">{t.craneNone}</option>
-              {me.buildings.map((b, i) => (
-                <option key={i} value={i}>
-                  {cardName(b.card)}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="field">
+            <span>{t.craneLabel}</span>
+            <Select
+              aria-label={t.craneLabel}
+              data-testid="crane-select"
+              value={replace === null ? '' : String(replace)}
+              onChange={(v) => setReplace(v === '' ? null : Number(v))}
+              options={[{ value: '', label: t.craneNone }, ...me.buildings.map((b, i) => ({ value: String(i), label: cardName(b.card) }))]}
+            />
+          </div>
         )}
         {placeErr && <p className="error">{t.placement[placeErr]}</p>}
         <div className="actions">

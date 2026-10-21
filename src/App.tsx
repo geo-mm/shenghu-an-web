@@ -7,6 +7,7 @@ import { Gallery } from './components/Gallery'
 import { DemoTable } from './components/DemoTable'
 import { isBotLevel } from './game/ai'
 import { HintsToggle } from './components/Hints'
+import { Select } from './components/Select'
 import { loadProfilePref } from './components/Players'
 import { WaitingRoom } from './components/WaitingRoom'
 import { HOST_PLAYER_ID, useP2PMatch, type MatchConfig } from './hooks/useP2PMatch'
@@ -81,17 +82,16 @@ export default function App() {
         <h1>{t.appTitle}</h1>
         <div className="header-actions">
           <HintsToggle />
-          <label className="lang-select">
-            <span className="sr-only">{t.language}</span>
+          <div className="lang-select">
             <span aria-hidden>🌐</span>
-            <select value={lang} onChange={(e) => setLang(e.target.value as Lang)} data-testid="lang-select" aria-label={t.language}>
-              {LANGS.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.label}
-                </option>
-              ))}
-            </select>
-          </label>
+            <Select<Lang>
+              value={lang}
+              onChange={setLang}
+              aria-label={t.language}
+              data-testid="lang-select"
+              options={LANGS.map((l) => ({ value: l.id, label: l.label }))}
+            />
+          </div>
           {config && (
             <button className="ghost" onClick={leave}>
               {t.leave}

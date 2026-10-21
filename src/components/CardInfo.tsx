@@ -50,35 +50,40 @@ function CardInfoDialog({ id, onClose, extra }: { id: CardId; onClose: () => voi
         data-testid="card-info"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="card-info-card">
-          <CardView id={id} width="min(240px, 70vw)" />
+        {/* The content scrolls inside the window, so the frame drawn around it stays put. */}
+        <div className="card-info-body">
+          <div className="card-info-card">
+            <CardView id={id} width="min(240px, 70vw)" />
+          </div>
+          <div className="card-info-details">
+            <h2 id="card-info-title">{name}</h2>
+            <p className="muted">
+              {otherName} · {t.kind[kind]}
+            </p>
+            <p className="card-info-text">{text}</p>
+            {extra}
+            <dl>
+              <dt>{t.cost}</dt>
+              <dd>{def.cost}</dd>
+              <dt>{t.vp}</dt>
+              <dd>{def.bonus ? t.vpVariable : def.vp}</dd>
+              {def.good && (
+                <>
+                  <dt>{t.produces}</dt>
+                  <dd>{t.goods[def.good]}</dd>
+                </>
+              )}
+              <dt>{t.copies}</dt>
+              <dd>
+                {BUILDINGS[def.type].count}
+                {BUILDINGS[def.type].expansion ? ` (+${BUILDINGS[def.type].expansion})` : ''}
+              </dd>
+            </dl>
+            <button className="primary" onClick={onClose} autoFocus>
+              {t.close}
+            </button>
+          </div>
         </div>
-        <h2 id="card-info-title">{name}</h2>
-        <p className="muted">
-          {otherName} · {t.kind[kind]}
-        </p>
-        <p className="card-info-text">{text}</p>
-        {extra}
-        <dl>
-          <dt>{t.cost}</dt>
-          <dd>{def.cost}</dd>
-          <dt>{t.vp}</dt>
-          <dd>{def.bonus ? t.vpVariable : def.vp}</dd>
-          {def.good && (
-            <>
-              <dt>{t.produces}</dt>
-              <dd>{t.goods[def.good]}</dd>
-            </>
-          )}
-          <dt>{t.copies}</dt>
-          <dd>
-            {BUILDINGS[def.type].count}
-            {BUILDINGS[def.type].expansion ? ` (+${BUILDINGS[def.type].expansion})` : ''}
-          </dd>
-        </dl>
-        <button className="primary" onClick={onClose} autoFocus>
-          {t.close}
-        </button>
       </div>
     </div>
   )

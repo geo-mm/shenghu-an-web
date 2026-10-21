@@ -277,7 +277,16 @@ select { font: inherit; padding: 4px 8px; border-radius: 6px; border: 1px solid 
 .assign { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
 .expansion-option { display: flex; gap: 6px; align-items: center; margin-top: 10px; }
 .card-info-card { display: grid; place-items: center; margin-bottom: 12px; }
-.card-info { max-height: calc(100vh - 32px); overflow: auto; }
+/* Card details: the content scrolls inside (the window itself carries the frame). On wide screens the
+   card sits beside the text, so everything usually fits without scrolling. */
+.card-info { max-height: calc(100dvh - 48px); display: flex; flex-direction: column; }
+.card-info-body { min-height: 0; overflow-y: auto; padding-right: 6px; }
+.card-info-details h2 { margin-top: 0; }
+@media (min-width: 720px) and (min-aspect-ratio: 1/1) {
+  .card-info { width: min(760px, 100%); }
+  .card-info-body { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 22px; align-items: start; }
+  .card-info-card { margin-bottom: 0; }
+}
 .role-art { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 6px; margin-bottom: 4px; }
 .gallery-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
 .gallery-cards { gap: 10px; margin-bottom: 12px; }

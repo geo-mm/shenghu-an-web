@@ -13,10 +13,11 @@ import {
   maxSell,
   owns,
   placementError,
+  handLimit,
   tableCtx,
   type EngineCtx,
 } from '../game/engine'
-import type { PlayerID, SanJuanState } from '../game/state'
+import type { PlayerID, PlayerState, SanJuanState } from '../game/state'
 import type { ClientState, MatchPlayer } from '../hooks/useP2PMatch'
 import { roleArt } from '../art'
 import type { PlayerProfile } from '../game/players'
@@ -185,6 +186,31 @@ function PlayerName({ p, me }: { p: PlayerID; me: PlayerID }) {
   )
 }
 
+/** "×9 limit 6": hand size and the limit checked at the start of each round (red when over it). */
+function HandCount({ G, player }: { G: SanJuanState; player: PlayerState }) {
+  const { t } = useI18n()
+  const limit = handLimit(G, player)
+  const over = player.hand.length > limit
+  return (
+    <span className={`hand-count ${over ? 'over' : ''}`} data-testid="hand-count">
+      ×{player.hand.length}
+      <span className="hand-limit">{t.handLimitLabel(limit)}</span>
+    </span>
+  )
+}
+
+/** Over the hand limit mid-round is allowed; say what will happen when the next round starts. */
+function OverLimit({ G, player }: { G: SanJuanState; player: PlayerState }) {
+  const { t } = useI18n()
+  const limit = handLimit(G, player)
+  if (player.hand.length <= limit || G.step.kind === 'gameOver') return null
+  return (
+    <span className="over-limit small" data-testid="over-limit">
+      ⚠ {t.overLimit(limit)}
+    </span>
+  )
+}
+
 /** A row of cards that overlap just enough to fit their container, like a hand of mahjong tiles. */
 function Fan({ n, className = '', children, ...rest }: { n: number; className?: string; children: ReactNode; 'data-testid'?: string }) {
   return (
@@ -208,8 +234,9 @@ function OpponentSeat({ G, p, me, seat, online }: { G: SanJuanState; p: PlayerID
         {!online && !G.bots.includes(p) && <span className="warn small">{t.offline}</span>}
         <span className="seat-hand" title={t.inHand(pl.hand.length)}>
           <CardView id={HIDDEN_CARD} />
-          <span>×{pl.hand.length}</span>
+          <HandCount G={G} player={pl} />
         </span>
+        <OverLimit G={G} player={pl} />
         <span className="muted small">{t.buildingsCount(pl.buildings.length)}</span>
         {stored && <span className="muted small">{stored}</span>}
       </div>
@@ -629,6 +656,10 @@ function MyArea({ G, ctx, playerID, moves, actionBox, sideBox, profileOpen, setP
         )}
         {G.governor === playerID && <span className="tag">{t.governorTag}</span>}
         <span className="muted small">{t.buildingsTitle(me.buildings.length)}</span>
+        <span className="small my-hand-count" title={t.inHand(me.hand.length)}>
+          {t.handLabel} <HandCount G={G} player={me} />
+        </span>
+        <OverLimit G={G} player={me} />
         {storedText(t, me) && <span className="muted small">{storedText(t, me)}</span>}
       </div>
       <Fan n={me.buildings.length} className="my-buildings" data-testid="my-buildings">

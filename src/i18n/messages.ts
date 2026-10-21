@@ -170,6 +170,9 @@ const en = {
   cancel: 'Cancel',
 
   inHand: (n: number) => `${s(n, 'card')} in hand`,
+  handLabel: 'Hand',
+  handLimitLabel: (limit: number) => `limit ${limit}`,
+  overLimit: (limit: number) => `Must discard down to ${limit} when the next round starts`,
   underChapel: (n: number) => `${n} under chapel`,
   stored: (chapel: number, bank: number, harbor: number) =>
     [chapel && `${chapel} under chapel`, bank && `${bank} in bank`, harbor && `${harbor} under harbor`].filter(Boolean).join(' · '),
@@ -478,6 +481,9 @@ const zhTW: Messages = {
   cancel: '取消',
 
   inHand: (n) => `手牌 ${n} 張`,
+  handLabel: '手牌',
+  handLimitLabel: (limit) => `上限 ${limit}`,
+  overLimit: (limit) => `下回合開始時需棄到 ${limit} 張`,
   underChapel: (n) => `教堂下 ${n} 張`,
   stored: (chapel, bank, harbor) =>
     [chapel && `教堂下 ${chapel} 張`, bank && `銀行 ${bank} 張`, harbor && `港口下 ${harbor} 張`].filter(Boolean).join(' · '),

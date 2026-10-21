@@ -540,3 +540,13 @@ input:focus, select:focus, button:focus-visible { outline: 2px solid var(--gold)
 .lang-select { display: inline-flex; align-items: center; gap: 6px; }
 .lang-select .sj-select-button { min-width: 7.5em; }
 .bot-level .sj-select-button { min-width: 6em; padding: 2px 8px 2px 10px; font-size: 0.85rem; }
+
+/* Hand size with its limit; over the limit it turns red and a note says what happens next round. */
+.hand-count { display: inline-flex; align-items: baseline; gap: 4px; font-weight: 700; }
+.hand-limit { font-size: 0.75rem; font-weight: 500; color: var(--muted); }
+.hand-count.over { color: #b3261e; }
+.hand-count.over .hand-limit { color: #b3261e; }
+.over-limit { color: #b3261e; font-weight: 600; line-height: 1.25; max-width: 12em; }
+.my-hand-count { color: var(--muted); }
+.my-hand-count .hand-count { color: var(--text); }
+.my-hand-count .hand-count.over { color: #b3261e; }

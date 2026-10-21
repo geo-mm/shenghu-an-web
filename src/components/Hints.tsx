@@ -38,7 +38,7 @@ export function HintsToggle() {
   return (
     <label className="hints-toggle" title={t.hintsToggleTitle}>
       <input type="checkbox" checked={on} onChange={(e) => setOn(e.target.checked)} data-testid="hints-toggle" />
-      <span aria-hidden>💡</span> {t.hintsToggle}
+      <span aria-hidden>💡</span> <span className="hints-label">{t.hintsToggle}</span>
     </label>
   )
 }

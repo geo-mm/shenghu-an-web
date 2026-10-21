@@ -77,7 +77,7 @@ export default function App() {
   const inviteLink = config ? `${location.origin}${location.pathname}?join=${config.token}` : ''
 
   return (
-    <main className={`app ${(gameStarted && state) || demo ? 'in-game' : ''}`}>
+    <main className={`app ${(gameStarted && state) || demo ? 'in-game' : ''} ${!config && !demo && !showGallery ? 'home' : ''}`}>
       <header className="app-header">
         <h1>{t.appTitle}</h1>
         <div className="header-actions">

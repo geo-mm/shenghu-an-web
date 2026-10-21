@@ -35,7 +35,7 @@ export function Lobby({ onStart, initialJoinToken = '' }: Props) {
 
   return (
     <div className="lobby">
-      <section className="panel">
+      <section className="panel host-panel">
         <h2>{t.hostTitle}</h2>
         <p className="muted">{t.hostHint}</p>
         <button
@@ -56,7 +56,7 @@ export function Lobby({ onStart, initialJoinToken = '' }: Props) {
         </label>
       </section>
 
-      <section className="panel">
+      <section className="panel join-panel">
         <h2>{t.joinTitle}</h2>
         <form onSubmit={join} className="join-form">
           <input

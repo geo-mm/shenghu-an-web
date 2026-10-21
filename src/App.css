@@ -290,7 +290,7 @@ select { font: inherit; padding: 4px 8px; border-radius: 6px; border: 1px solid 
 .role-art { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 6px; margin-bottom: 4px; }
 .gallery-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
 .gallery-cards { gap: 10px; margin-bottom: 12px; }
-.profile-panel { grid-column: 1 / -1; }
+.app:not(.home) .profile-panel { grid-column: 1 / -1; }
 .expansion-option input { flex: none; }
 .seat-me .seat-info { max-width: none; }
 
@@ -436,10 +436,44 @@ input:focus, select:focus, button:focus-visible { outline: 2px solid var(--gold)
 .modal { border-top: 10px solid var(--c, var(--gold)); }
 
 /* Lobby */
-.lobby { position: relative; }
-.art-lobby-hero .lobby::before {
-  content: ''; grid-column: 1 / -1; height: clamp(140px, 26vw, 300px); border-radius: 14px;
-  background: var(--sj-lobby-hero) center / cover; box-shadow: inset 0 0 0 2px var(--gold), 0 8px 24px rgba(0, 0, 0, 0.4);
+/* Home page: everything on one screen. The harbour picture fills the left; host / join and
+   the name, colour and icon sit on the right. */
+.app.home { max-width: 1240px; height: 100dvh; min-height: 0; overflow: hidden; padding: 10px 18px; gap: 10px; }
+.app.home .app-header h1 { margin: 2px 0; }
+.home .lobby {
+  /* Sized to its content and centred on the screen, so the picture keeps a landscape shape. */
+  flex: 0 1 auto; margin: auto 0; min-height: 0; gap: 14px;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.55fr) minmax(0, 0.55fr);
+  grid-template-rows: auto auto;
+  grid-template-areas: 'hero host join' 'hero profile profile';
+}
+.home .lobby::before {
+  content: ''; grid-area: hero; border-radius: 14px; min-height: 0;
+  background: linear-gradient(170deg, #8fd3e0 0%, #e9f1e4 42%, #3b8fa3 43%, #0f4c5c 100%);
+  box-shadow: inset 0 0 0 2px var(--gold), 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+.art-lobby-hero .home .lobby::before { background: var(--sj-lobby-hero) 30% center / cover; }
+.home .host-panel { grid-area: host; }
+.home .join-panel { grid-area: join; }
+.home .profile-panel { grid-area: profile; min-height: 0; overflow-y: auto; }
+.home .panel { padding: 14px 18px; }
+.home .panel h2 { font-size: 1.1rem; }
+.home .join-form input { min-width: 0; width: 100%; }
+.home .join-form button { width: 100%; }
+.home > footer { font-size: 0.75rem; }
+/* Portrait phones: the picture becomes a banner on top; host and join side by side. */
+@media (max-aspect-ratio: 4/5) {
+  .app.home { padding: 8px 10px; }
+  .home .lobby {
+    gap: 8px; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: 18dvh auto auto;
+    grid-template-areas: 'hero hero' 'host join' 'profile profile';
+  }
+  .home .panel { padding: 10px 12px; }
+  .home .host-panel > p, .home .profile-panel > p { display: none; }
+  .home .swatch { width: 26px; height: 26px; }
+  .home .picker-row { gap: 5px; }
+  .home > footer { display: none; }
+  .hints-toggle .hints-label { display: none; }
 }
 .token { font-family: var(--serif); color: var(--accent); text-shadow: 0 1px 0 #fff3d6; }
 .seat-row { background: rgba(255, 250, 235, 0.55); border-color: rgba(138, 106, 38, 0.5); }
